@@ -1,0 +1,3 @@
+See the images to understand a significant implementation eror in 3D Gblur
+that is best highlighted with PIL's edge detection algorithms. Cropping
+and then blurring makes the grid very prominent in the final images.
