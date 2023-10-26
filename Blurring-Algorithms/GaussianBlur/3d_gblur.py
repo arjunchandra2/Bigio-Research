@@ -7,6 +7,8 @@ Created on Tue Oct 17 00:53:43 2023
 
 This program models the blur propogation of 3-D Brain Scans so that we can train on open source datasets
 and implement transfer learning since MRI scan data is limited and expensive and lends itself to overfitting.
+There are degrees of randomness that are implemented in this version, but perhaps a better implementation will
+consider the bounding box when propogating the blur. 
 """
 from PIL import Image, ImageFilter
 import numpy as np
