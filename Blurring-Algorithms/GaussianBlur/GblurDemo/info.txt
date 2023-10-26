@@ -1,0 +1,12 @@
+//RUN INFO//
+
+mod_size = 600
+grid_dim = 12
+num_channels = 23
+num_prop = 3
+
+Randomness:
+center_frame = 9
+center = 4,5
+forward_direction = ur
+backward_direction = dl
