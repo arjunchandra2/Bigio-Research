@@ -1,4 +1,4 @@
 See the images to understand a significant implementation eror in 3D Gblur that is best highlighted with
 PIL's edge detection algorithms. Cropping and then blurring makes the grid very prominent in the final images.
 There are several ways to resolve this. The simplest way is to apply a final gaussian blur to the 
-entire image so that the image tapers at the joins towards a global blur, but the focal point is lost in this solution. 
+entire image so that the image tapers at the joins towards a global blur, but the focal point is lost.
