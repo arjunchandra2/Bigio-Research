@@ -1,0 +1,5 @@
+This folder contains a sample output of the focus-stacking tool found at (https://pypi.org/project/focus-stack/#description) (Author: Mohit Nalavadi). 
+
+The source code was slightly modified to add support for reading in .tif images from the specified input directory since all of the opencv functionality
+used in the script already supports .tif files. The source was also modified to resize all of the images in the directory to the same size (the size
+used by the model (600,600)) so that they could be used with standard numpy library methods. 
