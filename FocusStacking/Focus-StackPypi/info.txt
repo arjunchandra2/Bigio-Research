@@ -7,4 +7,5 @@ was also modified to resize all of the images in the directory to the same size 
 (600,600)) so that they could be used with standard numpy library methods. 
 
 The tool does a decent job of maintaining some of the brain structures but ultimately will not be 
-useful for training as it seems to fail 
+useful as it is for training as it eliminates some of the structures entirely and adds extraneous 
+features. 
