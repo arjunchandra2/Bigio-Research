@@ -4,6 +4,9 @@ Bounding Box Class
 
 class Bbox:
 
+    #threshold for bbox cropping
+    OVERLAP_THRESHOLD = 0.8
+
     #number of bboxes left - should be zero when an image has been fully processed
     count = 0
     #maintain a list of all unseen bounding boxes 
@@ -26,7 +29,6 @@ class Bbox:
             Bbox.bboxes_unseen[z_plane] = [self]
 
         
-
 
 
     def __str__(self) -> str:

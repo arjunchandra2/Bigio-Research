@@ -5,6 +5,9 @@ main.py - driver code for cropping annotations
 from bbox import Bbox
 #from mat4py import loadmat
 from scipy.io import loadmat
+from PIL import Image
+from skimage import io
+from matplotlib import pyplot as plt
 
 
 def add_bboxes(annotations):
@@ -43,13 +46,36 @@ def load_annotations(file_path):
     
     return annotations_dict
 
+def process_image(image_path):
+    im = io.MultiImage(image_path)
+    im_frames = im[0]
+    pil_frames = []
+    #skimage -> PIL for easier cropping and displaying 
+    for im in im_frames:
+        image = Image.fromarray(im, mode="RGB")
+        pil_frames.append(image)
+        
+    return pil_frames
+
+def crop_bboxes(frames):
+    pass
 
 def main():
     """ Main"""
 
     #OS LOGIC HERE TO READ ALL .MAT FILES IN DIRECTORY
-    annotations = load_annotations('/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Scrap1/char_annot.mat')
+    
+    #Read in image and store z_stack in array
+    image_path = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Scrap1/RGB_trans_corrweight_1120.tif'
+    im_frames = process_image(image_path)
+    
+    #Reading in .mat dat and creating bboxes - should be done for each .tif image's corresponding .mat file
+    data_path = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Scrap1/char_annot.mat'
+    annotations = load_annotations(data_path)
     add_bboxes(annotations)
+
+    crop_bboxes(im_frames)
+
 
     
 
