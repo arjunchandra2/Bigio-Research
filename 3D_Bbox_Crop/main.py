@@ -8,7 +8,9 @@ from scipy.io import loadmat
 from PIL import Image
 from skimage import io
 from matplotlib import pyplot as plt
+import random
 
+WINDOW_SIZE = 600
 
 def add_bboxes(annotations):
     """
@@ -47,6 +49,10 @@ def load_annotations(file_path):
     return annotations_dict
 
 def process_image(image_path):
+    """
+    - Returns list of Pillow images for each frame
+    - **Can improve efficiency if needed by only storing frames for which annotations are present
+    """
     im = io.MultiImage(image_path)
     im_frames = im[0]
     pil_frames = []
@@ -58,7 +64,45 @@ def process_image(image_path):
     return pil_frames
 
 def crop_bboxes(frames):
-    pass
+    """
+    - Crop images around bounding box in each frame as we go and check for overlap
+    - Note that z-plane is one-indexed 
+    """
+
+    for i in range(len(frames)):
+        if i + 1 in Bbox.bboxes_unseen:
+            #while there are boxes left to process in z_plane i+1
+            while(Bbox.bboxes_unseen[i+1]):
+                #get the last bbox
+                current_bbox = Bbox.bboxes_unseen[i+1].pop()
+                #set random cropping bounds - can be used for data augmentation if model architecture is not robust to translation
+                #ensuring the window does not exceed the image (this logic might need checking)
+                if current_bbox.top_left_x - WINDOW_SIZE + current_bbox.width > 0:
+                    leftx = current_bbox.top_left_x - WINDOW_SIZE + current_bbox.width
+                else:
+                    leftx = 0
+                if current_bbox.top_left_x + WINDOW_SIZE > frames[i].size[0]:
+                    rightx = current_bbox.top_left_x - (current_bbox.top_left_x + WINDOW_SIZE - frames[i].size[0]) 
+                else:
+                    rightx = current_bbox.top_left_x
+
+                if current_bbox.top_left_y - WINDOW_SIZE + current_bbox.height > 0:
+                    bottomy = current_bbox.top_left_y - WINDOW_SIZE + current_bbox.height
+                else:
+                    bottomy = 0
+                if current_bbox.top_left_y + WINDOW_SIZE > frames[i].size[1]:
+                    topy = current_bbox.top_left_y - (current_bbox.top_left_y + WINDOW_SIZE - frames[i].size[1]) 
+                else:
+                    topy = current_bbox.top_left_y
+                
+                left = random.randint(leftx, rightx)
+                upper = random.randint(bottomy, topy)
+
+                
+
+
+
+
 
 def main():
     """ Main"""
@@ -69,8 +113,10 @@ def main():
     image_path = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Scrap1/RGB_trans_corrweight_1120.tif'
     im_frames = process_image(image_path)
     
+    print(im_frames[0].size[0])
+
     #Reading in .mat dat and creating bboxes - should be done for each .tif image's corresponding .mat file
-    data_path = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Scrap1/char_annot.mat'
+    data_path = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Scrap1/RGB_trans_corrweight_1120.tif.mat'
     annotations = load_annotations(data_path)
     add_bboxes(annotations)
 
