@@ -105,10 +105,13 @@ def crop_bboxes(frames, im_path):
     """
     - Crop images around bounding box in each frame as we go and check for overlap
     - Note that z-plane is one-indexed as opposed to frames array
+    - Images are saved to working directory with z_plane and crop number
     """
 
     for i in range(len(frames)):
         if i + 1 in Bbox.bboxes_unseen:
+            #crop number
+            j = 0
             #while there are boxes left to process in z_plane i+1
             while(Bbox.bboxes_unseen[i+1]):
                 #get the last bbox
@@ -141,6 +144,14 @@ def crop_bboxes(frames, im_path):
 
                 overlap_bboxes = get_overlaps(left, upper, right, lower, i+1)
 
+                overlap_bboxes.append(current_bbox)
+
+                cropped_im = frames[i].crop((left, upper, right, lower))
+                save_path = im_path[:-3] + '(' + str(i+1) + '_' + str(j) + ')' +  '.png'
+                print("Saving image......." + save_path)
+                cropped_im.save(save_path)
+                j += 1
+
     
     assert Bbox.count == 0
     
@@ -163,7 +174,7 @@ def main():
 
     crop_bboxes(im_frames, image_path)
     
-    
+
 
 
 if __name__ == "__main__":

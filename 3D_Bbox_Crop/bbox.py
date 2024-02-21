@@ -8,7 +8,7 @@ class Bbox:
     OVERLAP_THRESHOLD = 0.8
 
     #number of bboxes left - should be zero when an image has been fully processed
-    #this will be decremented in the caller code 
+    #this must be decremented by the *caller* code 
     count = 0
     #maintain a list of all unseen bounding boxes 
     bboxes_unseen = {}
