@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 import random
 
 WINDOW_SIZE = 600
-CLASS_NUM = {'Defect': 1, 'Swelling': 2, 'Vesicle': 3}
+CLASS_NUM = {'Defect': 0, 'Swelling': 1, 'Vesicle': 2}
 
 def add_bboxes(annotations):
     """
