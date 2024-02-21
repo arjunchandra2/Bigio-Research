@@ -63,10 +63,48 @@ def process_image(image_path):
         
     return pil_frames
 
-def crop_bboxes(frames):
+
+def get_overlaps(left, upper, right, lower, z_plane):
+    """
+    - Returns list of bounding boxes exceeding overlap threshold for given window in given plane
+    - Crops BBoxes as necessary
+    - Remove Bboxes from tracking
+    """
+    overlaps = []
+    
+    for bbox in Bbox.bboxes_unseen[z_plane]:
+        #bbox is in the window - check overlap
+        if left <= bbox.top_left_x <= right and upper <= bbox.top_left_y <= lower:
+            total_area = bbox.width * bbox.height
+
+            if bbox.top_left_x + bbox.width > right:
+                width_inside = right-bbox.top_left_x
+            else:
+                width_inside = bbox.width
+            if bbox.top_left_y + bbox.height > lower:
+                height_inside = lower-bbox.top_left_y
+            else:
+                height_inside = bbox.height
+
+            area_inside = width_inside * height_inside
+            
+            if area_inside/total_area > Bbox.OVERLAP_THRESHOLD:
+                #crop bbox and add to overlap set
+                bbox.width = width_inside
+                bbox.height = height_inside
+                overlaps.append(bbox)
+
+    #remove overlaps from tracked bboxes
+    for overlap in overlaps:
+        Bbox.bboxes_unseen[z_plane].remove(overlap)
+        Bbox.count -= 1
+
+    return overlaps
+
+def crop_bboxes(frames, im_path):
     """
     - Crop images around bounding box in each frame as we go and check for overlap
-    - Note that z-plane is one-indexed 
+    - Note that z-plane is one-indexed as opposed to frames array
     """
 
     for i in range(len(frames)):
@@ -75,6 +113,7 @@ def crop_bboxes(frames):
             while(Bbox.bboxes_unseen[i+1]):
                 #get the last bbox
                 current_bbox = Bbox.bboxes_unseen[i+1].pop()
+                Bbox.count -= 1
                 #set random cropping bounds - can be used for data augmentation if model architecture is not robust to translation
                 #ensuring the window does not exceed the image (this logic might need checking)
                 if current_bbox.top_left_x - WINDOW_SIZE + current_bbox.width > 0:
@@ -97,11 +136,15 @@ def crop_bboxes(frames):
                 
                 left = random.randint(leftx, rightx)
                 upper = random.randint(bottomy, topy)
+                right = left + WINDOW_SIZE
+                lower = upper + WINDOW_SIZE
 
+                overlap_bboxes = get_overlaps(left, upper, right, lower, i+1)
+
+    
+    assert Bbox.count == 0
+    
                 
-
-
-
 
 
 def main():
@@ -112,19 +155,15 @@ def main():
     #Read in image and store z_stack in array
     image_path = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Scrap1/RGB_trans_corrweight_1120.tif'
     im_frames = process_image(image_path)
-    
-    print(im_frames[0].size[0])
 
     #Reading in .mat dat and creating bboxes - should be done for each .tif image's corresponding .mat file
     data_path = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Scrap1/RGB_trans_corrweight_1120.tif.mat'
     annotations = load_annotations(data_path)
     add_bboxes(annotations)
 
-    crop_bboxes(im_frames)
-
-
+    crop_bboxes(im_frames, image_path)
     
-
+    
 
 
 if __name__ == "__main__":
