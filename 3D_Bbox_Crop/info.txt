@@ -21,7 +21,7 @@ Cropped images with annotations should be saved in a new folder in the working d
 
 Annotation Formats:
 
-Yolov8 - https://roboflow.com/formats/yolov8-pytorch-txt
+Yolov8 - https://docs.ultralytics.com/datasets/detect/
 
 Each image has one txt file with a single line for each bounding box. The format of each row is:
 
