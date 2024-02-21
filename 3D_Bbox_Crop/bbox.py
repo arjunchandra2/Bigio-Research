@@ -29,7 +29,12 @@ class Bbox:
         else:
             Bbox.bboxes_unseen[z_plane] = [self]
 
-        
+    
+    def center_x(self):
+        return self.top_left_x + self.width//2
+    
+    def center_y(self):
+        return self.top_left_y + self.height//2
 
 
     def __str__(self) -> str:

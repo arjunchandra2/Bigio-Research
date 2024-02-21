@@ -11,6 +11,7 @@ from matplotlib import pyplot as plt
 import random
 
 WINDOW_SIZE = 600
+CLASS_NUM = {'Defect': 1, 'Swelling': 2, 'Vesicle': 3}
 
 def add_bboxes(annotations):
     """
@@ -101,6 +102,34 @@ def get_overlaps(left, upper, right, lower, z_plane):
 
     return overlaps
 
+def save_annotations_yolo(left, upper, bboxes, im_path):
+    """
+    - Save annotations in yolo format .txt file matching image path
+    """
+
+    #change extension
+    file_path = im_path[:-3] + 'txt'
+
+    f = open(file_path, 'w')
+
+    for bbox in bboxes:
+        c_id = CLASS_NUM[bbox.class_name]
+        cx = bbox.center_x()
+        cy = bbox.center_y()
+        width = bbox.width
+        height = bbox.height
+
+        #normalize coordinates
+        cx_n = (cx-left)/WINDOW_SIZE
+        cy_n = (cy-upper)/WINDOW_SIZE
+        width_n = width / WINDOW_SIZE
+        height_n = height / WINDOW_SIZE
+
+        entry = str(c_id) + ' ' + str(cx_n) + ' ' + str(cy_n) + ' ' + str(width_n) + ' ' + str(height_n) + '\n'
+        f.write(entry)
+     
+    f.close()   
+
 def crop_bboxes(frames, im_path):
     """
     - Crop images around bounding box in each frame as we go and check for overlap
@@ -151,6 +180,12 @@ def crop_bboxes(frames, im_path):
                 print("Saving image......." + save_path)
                 cropped_im.save(save_path)
                 j += 1
+
+        
+
+                #MODIFY ANNOTATION FORMAT HERE
+                save_annotations_yolo(left, upper, overlap_bboxes, save_path)
+
 
     
     assert Bbox.count == 0
