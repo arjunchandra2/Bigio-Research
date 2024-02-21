@@ -6,22 +6,36 @@ from bbox import Bbox
 #from mat4py import loadmat
 from scipy.io import loadmat
 
+
+def load_annotations(file_path):
+    """
+    - Read in and format annotations from .mat file into dictionary 
+    - Keep numpy datatypes
+    """
+
+    data = loadmat(file_path)
+    class_type = data['annotations'][0][2]
+    #strip whitespace
+    for i in range(len(class_type)):
+        class_type[i] = class_type[i].strip()
+    
+    z_plane = data['annotations'][0][4]
+    z_plane = z_plane.flatten()
+
+    bbox_coord = data['annotations'][0][5]
+    
+    assert len(class_type) == len(z_plane) == len(bbox_coord)
+
+    annotations_dict = {'class_type': class_type, 'z_plane': z_plane, 'bbox_coord': bbox_coord}
+    
+    return annotations_dict
+
+
 def main():
     """ Main"""
 
     #OS LOGIC HERE TO READ ALL .MAT FILES IN DIRECTORY
-    data = loadmat('/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Scrap1/char_annot.mat')
-
-    print(data['annotations'])
-    print(data['annotations'][0][2][0].strip()) #strip whitespace from class
-
-    coords_example = data['annotations'][0][5]
-    z_plane_example = data['annotations'][0][4]
-    test2 = Bbox(coords_example[0][0],coords_example[0][1],coords_example[0][2], \
-                coords_example[0][3], z_plane_example[0][0], "swelling")
-
-    print(test2)
-
+    annotations = load_annotations('/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Scrap1/char_annot.mat')
     
 
 
