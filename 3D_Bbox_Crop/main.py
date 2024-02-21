@@ -7,6 +7,19 @@ from bbox import Bbox
 from scipy.io import loadmat
 
 
+def add_bboxes(annotations):
+    """
+    - Create bbox objects for all of the bounding boxes in each (3D) image
+    - All of the bboxes for the image will be stored within the class
+    """
+    for i in range(len(annotations['class_type'])):
+        class_name = annotations['class_type'][i]
+        z_plane = annotations['z_plane'][i]
+        coords = annotations['bbox_coord'][i]
+        
+        bbox = Bbox(coords[0], coords[1], coords[2], coords[3], z_plane, class_name)
+
+
 def load_annotations(file_path):
     """
     - Read in and format annotations from .mat file into dictionary 
@@ -36,7 +49,10 @@ def main():
 
     #OS LOGIC HERE TO READ ALL .MAT FILES IN DIRECTORY
     annotations = load_annotations('/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Scrap1/char_annot.mat')
+    add_bboxes(annotations)
+
     
+
 
 
 if __name__ == "__main__":

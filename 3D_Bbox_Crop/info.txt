@@ -10,9 +10,10 @@ The .mat file will need to be parsed and appropriate data should be kept for cro
 Algorithm for Cropping:
 
 Given that annotations are likely sparse in large images, we will not use a sliding window. Instead, we crop images
-around each bounding box that has not yet been covered. We then check the other bounding boxes for overlap beyond some
-threshold and crop as necessary. **This could be inefficient if there are a large number of bounding boxes, in which 
-case we might consider sorting and only checking other bounding boxes as necessary**
+around each bounding box that has not yet been covered, selecting a random position for cropping. 
+We then check the other bounding boxes for overlap beyond some threshold and crop as necessary, going plane by plane in the 
+z-stack. **This could be inefficient if there are a large number of bounding boxes, in which case we might consider
+ sorting and only checking other bounding boxes as necessary**
 
 Saving Cropped Images and Annotations:
 
