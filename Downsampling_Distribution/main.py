@@ -4,6 +4,7 @@ main.py - get annotation distribution
 """
 
 from scipy.io import loadmat
+import numpy as np
 from matplotlib import pyplot as plt
 import os
 
@@ -34,13 +35,26 @@ def main():
     for file in os.listdir(data_directory):
         if file.endswith('.mat'):
             process_file(os.path.join(data_directory, file), bbox_areas)
+
     
-    print(len(bbox_areas))
+    figure, axis = plt.subplots(1, 2) 
+
+    axis[0].hist(bbox_areas, bins=15, edgecolor = "black")
+    axis[0].set_title("Counts of Bounding Boxes by Area")
+    axis[0].set_xlabel("Bounding Box Area (px)")
+    axis[0].set_ylabel("Count")
+    axis[0].minorticks_on()
+
+
     
-    plt.hist(bbox_areas)
-    plt.title("Counts of Bounding Boxes by Area")
-    plt.xlabel("Boundning Box Area")
-    plt.ylabel("Count")
+
+    N, bins, patches = axis[1].hist(np.array(bbox_areas)/1024, bins=15, edgecolor = "black")
+    for i in range(0,4):
+        patches[i].set_facecolor('r')
+    axis[1].set_title("Counts of Bounding Boxes by Area After Pooling")
+    axis[1].set_xlabel("Bounding Box Area (px)")
+    axis[1].set_ylabel("Count")
+    axis[1].minorticks_on()
     plt.show()
 
 
