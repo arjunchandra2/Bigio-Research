@@ -46,8 +46,6 @@ def main():
     axis[0].minorticks_on()
 
 
-    
-
     N, bins, patches = axis[1].hist(np.array(bbox_areas)/1024, bins=15, edgecolor = "black")
     for i in range(0,4):
         patches[i].set_facecolor('r')
