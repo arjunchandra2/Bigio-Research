@@ -45,3 +45,7 @@ main.py:
 - when loading .mat files strings must be stored as character arrays so that
 they are not parsed as Matlab Opaque objects 
 - strip whitespace from defect classes 
+- when saving images with PIL and files we overwrite if filepath already exists so 
+no need to implement os logic to remove previously created files in directory 
+- there can be slight variation in # of images in each run and where annotations are
+due to randomness

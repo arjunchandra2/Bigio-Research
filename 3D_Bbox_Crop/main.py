@@ -199,11 +199,11 @@ def main():
     #OS LOGIC HERE TO READ ALL .MAT FILES IN DIRECTORY
     
     #Read in image and store z_stack in array
-    image_path = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Scrap1/11_X13223_Y20674.tif'
+    image_path = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Anna/11_X13223_Y20674.tif'
     im_frames = process_image(image_path)
 
     #Reading in .mat dat and creating bboxes - should be done for each .tif image's corresponding .mat file
-    data_path = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Scrap1/11_X13223_Y20674.tif.mat'
+    data_path = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Anna/11_X13223_Y20674.tif.mat'
     annotations = load_annotations(data_path)
     add_bboxes(annotations)
 
