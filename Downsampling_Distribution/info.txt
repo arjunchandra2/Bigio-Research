@@ -1,0 +1,8 @@
+The Yolov8 Architecture resizes the input images to the default size 640x640 and then 
+successively downsamples in the backbone layer. The final feature map has dimensions 
+20x20 - each dimension is reduced by 2^5. Here we will analyze the distrubition of the size
+of our bounding boxes to make sure that defects will not be lost (<1px) in this process. 
+If we find this is the case we can use a smaller cropping window in the 3D_BBox_Crop script 
+so that when the images are resized (upscaled) so too are the bounding boxes.
+
+
