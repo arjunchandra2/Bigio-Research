@@ -10,7 +10,7 @@ from skimage import io
 from matplotlib import pyplot as plt
 import random
 
-WINDOW_SIZE = 600
+WINDOW_SIZE = 300
 CLASS_NUM = {'Defect': 0, 'Swelling': 1, 'Vesicle': 2}
 
 def add_bboxes(annotations):
@@ -199,11 +199,11 @@ def main():
     #OS LOGIC HERE TO READ ALL .MAT FILES IN DIRECTORY
     
     #Read in image and store z_stack in array
-    image_path = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Scrap1/RGB_trans_corrweight_1120.tif'
+    image_path = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Scrap1/11_X13223_Y20674.tif'
     im_frames = process_image(image_path)
 
     #Reading in .mat dat and creating bboxes - should be done for each .tif image's corresponding .mat file
-    data_path = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Scrap1/RGB_trans_corrweight_1120.tif.mat'
+    data_path = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Scrap1/11_X13223_Y20674.tif.mat'
     annotations = load_annotations(data_path)
     add_bboxes(annotations)
 
