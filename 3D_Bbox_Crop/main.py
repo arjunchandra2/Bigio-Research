@@ -14,6 +14,7 @@ import shutil
 
 
 WINDOW_SIZE = 300
+AUGMENTATION = False
 CLASS_NUM = {'Defect': 0, 'Swelling': 1, 'Vesicle': 2}
 
 def add_bboxes(annotations):
@@ -165,7 +166,7 @@ def crop_bboxes(frames, im_save_path, data_save_path):
         if z + 1 in Bbox.bboxes_unseen:
             #crop number
             i = 0
-            #while there are boxes left to process in z_plane i+1
+            #while there are boxes left to process in z_plane z+1
             while(Bbox.bboxes_unseen[z+1]):
                 #get the last bbox
                 current_bbox = Bbox.bboxes_unseen[z+1].pop()
@@ -236,30 +237,23 @@ def main():
             image_path = os.path.join(data_directory, file)
             data_path = image_path + '.mat'
             if os.path.exists(data_path):
+                #Read in image and store z_stack in array of PIL objects
                 im_frames = process_image(image_path)
+                #reading .mat and adding bboxes to Bbox class
                 annotations = load_annotations(data_path)
                 add_bboxes(annotations)
+
                 image_save_path = os.path.join(results_dir, 'images', file)
                 data_save_path = os.path.join(results_dir, 'annotations', file)
-                crop_bboxes(im_frames, image_save_path, data_save_path)
 
+                #crop and save bboxes using PIL img array 'frames' and Bbox class 
                 
-                
+                if AUGMENTATION:
+                   raise NotImplementedError
+                else:
+                    crop_bboxes(im_frames, image_save_path, data_save_path)
 
-
-    """
-    
-    #Read in image and store z_stack in array
-    image_path = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Anna/11_X13223_Y20674.tif'
-    im_frames = process_image(image_path)
-
-    #Reading in .mat dat and creating bboxes - should be done for each .tif image's corresponding .mat file
-    data_path = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Anna/11_X13223_Y20674.tif.mat'
-    annotations = load_annotations(data_path)
-    add_bboxes(annotations)
-
-    crop_bboxes(im_frames, image_path)
-    """
+        
 
 if __name__ == "__main__":
     """Run from Command Line"""
