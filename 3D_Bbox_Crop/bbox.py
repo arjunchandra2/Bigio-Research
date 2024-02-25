@@ -25,7 +25,9 @@ class Bbox:
         #update Class variables 
         Bbox.count += 1
         if z_plane in Bbox.bboxes_unseen:
-            Bbox.bboxes_unseen[z_plane].append(self)
+            #do not add duplicates from annotation file
+            if self not in Bbox.bboxes_unseen[z_plane]:
+             Bbox.bboxes_unseen[z_plane].append(self)
         else:
             Bbox.bboxes_unseen[z_plane] = [self]
 
@@ -35,7 +37,14 @@ class Bbox:
     
     def center_y(self):
         return self.top_left_y + self.height//2
+    
 
+    
+    
+    def __eq__(self, other) -> bool:
+        return self.top_left_x == other.top_left_x and self.top_left_y == other.top_left_y and self.width == other.width \
+        and self.height == other.height and self.z_plane == other.z_plane
+    
 
     def __str__(self) -> str:
         return "Class: " + self.class_name + "\n" + "z_plane: " + str(self.z_plane) + "\n" + \

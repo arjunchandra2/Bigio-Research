@@ -186,7 +186,6 @@ def crop_bboxes(frames, im_path):
                 #MODIFY ANNOTATION FORMAT HERE
                 save_annotations_yolo(left, upper, overlap_bboxes, save_path)
 
-
     
     assert Bbox.count == 0
     
@@ -196,6 +195,7 @@ def crop_bboxes(frames, im_path):
 def main():
     """ Main"""
 
+    
     #OS LOGIC HERE TO READ ALL .MAT FILES IN DIRECTORY
     
     #Read in image and store z_stack in array
@@ -209,8 +209,6 @@ def main():
 
     crop_bboxes(im_frames, image_path)
     
-
-
 
 if __name__ == "__main__":
     """Run from Command Line"""

@@ -49,3 +49,9 @@ they are not parsed as Matlab Opaque objects
 no need to implement os logic to remove previously created files in directory 
 - there can be slight variation in # of images in each run and where annotations are
 due to randomness
+
+
+Bbox.py:
+
+- We need to clean up the data from the annotation software when we load it in since there are 
+some bugs resulting in duplicate data 
