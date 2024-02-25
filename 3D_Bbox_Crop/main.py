@@ -10,6 +10,7 @@ from skimage import io
 from matplotlib import pyplot as plt
 import random
 import os
+import shutil
 
 
 WINDOW_SIZE = 300
@@ -20,6 +21,9 @@ def add_bboxes(annotations):
     - Create bbox objects for all of the bounding boxes in each (3D) image
     - All of the bboxes for the image will be stored within the class
     """
+    #every time we call this method there should be no boudning boxes from previous images
+    assert Bbox.count == 0
+
     for i in range(len(annotations['class_type'])):
         class_name = annotations['class_type'][i]
         z_plane = annotations['z_plane'][i]
@@ -55,7 +59,7 @@ def load_annotations(file_path):
 def process_image(image_path):
     """
     - Returns list of Pillow images for each frame
-    - **Can improve efficiency if needed by only storing frames for which annotations are present
+    - *Can improve efficiency if needed by only storing frames for which annotations are present*
     """
     im = io.MultiImage(image_path)
     im_frames = im[0]
@@ -105,13 +109,13 @@ def get_overlaps(left, upper, right, lower, z_plane):
 
     return overlaps
 
-def save_annotations_yolo(left, upper, bboxes, im_path):
+def save_annotations_yolo(left, upper, bboxes, data_save_path, z, i):
     """
     - Save annotations in yolo format .txt file matching image path
     """
 
     #change extension
-    file_path = im_path[:-3] + 'txt'
+    file_path = data_save_path[:-3] + '(' + str(z+1) + '_' + str(i) + ')' +  '.txt'
 
     f = open(file_path, 'w')
 
@@ -145,7 +149,7 @@ def remove_blurry(frames):
             Bbox.bboxes_unseen[z] = []
 
 
-def crop_bboxes(frames, im_path):
+def crop_bboxes(frames, im_save_path, data_save_path):
     """
     - Crop images around bounding box in each frame as we go and check for overlap
     - Z-plane is one-indexed as opposed to frames array
@@ -157,14 +161,14 @@ def crop_bboxes(frames, im_path):
 
     #range(2,len(frames)-2) to not include first two and last two planes since they are too blurry anyways
     #alter loop bounds depending on dataset
-    for i in range(2,len(frames)-2):
-        if i + 1 in Bbox.bboxes_unseen:
+    for z in range(2,len(frames)-2):
+        if z + 1 in Bbox.bboxes_unseen:
             #crop number
-            j = 0
+            i = 0
             #while there are boxes left to process in z_plane i+1
-            while(Bbox.bboxes_unseen[i+1]):
+            while(Bbox.bboxes_unseen[z+1]):
                 #get the last bbox
-                current_bbox = Bbox.bboxes_unseen[i+1].pop()
+                current_bbox = Bbox.bboxes_unseen[z+1].pop()
                 Bbox.count -= 1
                 #set random cropping bounds - can be used for data augmentation if model architecture is not robust to translation
                 #ensuring the window does not exceed the image (this logic might need checking)
@@ -172,8 +176,8 @@ def crop_bboxes(frames, im_path):
                     leftx = current_bbox.top_left_x - WINDOW_SIZE + current_bbox.width
                 else:
                     leftx = 0
-                if current_bbox.top_left_x + WINDOW_SIZE > frames[i].size[0]:
-                    rightx = current_bbox.top_left_x - (current_bbox.top_left_x + WINDOW_SIZE - frames[i].size[0]) 
+                if current_bbox.top_left_x + WINDOW_SIZE > frames[z].size[0]:
+                    rightx = current_bbox.top_left_x - (current_bbox.top_left_x + WINDOW_SIZE - frames[z].size[0]) 
                 else:
                     rightx = current_bbox.top_left_x
 
@@ -181,8 +185,8 @@ def crop_bboxes(frames, im_path):
                     bottomy = current_bbox.top_left_y - WINDOW_SIZE + current_bbox.height
                 else:
                     bottomy = 0
-                if current_bbox.top_left_y + WINDOW_SIZE > frames[i].size[1]:
-                    topy = current_bbox.top_left_y - (current_bbox.top_left_y + WINDOW_SIZE - frames[i].size[1]) 
+                if current_bbox.top_left_y + WINDOW_SIZE > frames[z].size[1]:
+                    topy = current_bbox.top_left_y - (current_bbox.top_left_y + WINDOW_SIZE - frames[z].size[1]) 
                 else:
                     topy = current_bbox.top_left_y
                 
@@ -191,20 +195,20 @@ def crop_bboxes(frames, im_path):
                 right = left + WINDOW_SIZE
                 lower = upper + WINDOW_SIZE
 
-                overlap_bboxes = get_overlaps(left, upper, right, lower, i+1)
+                overlap_bboxes = get_overlaps(left, upper, right, lower, z+1)
 
                 overlap_bboxes.append(current_bbox)
 
-                cropped_im = frames[i].crop((left, upper, right, lower))
-                save_path = im_path[:-3] + '(' + str(i+1) + '_' + str(j) + ')' +  '.png'
+                cropped_im = frames[z].crop((left, upper, right, lower))
+                save_path = im_save_path[:-3] + '(' + str(z+1) + '_' + str(i) + ')' +  '.png'
                 print("Saving image......." + save_path)
                 cropped_im.save(save_path)
-                j += 1
-
-        
+    
 
                 #MODIFY ANNOTATION FORMAT HERE
-                save_annotations_yolo(left, upper, overlap_bboxes, save_path)
+                save_annotations_yolo(left, upper, overlap_bboxes, data_save_path, z, i)
+
+                i += 1
 
     
     assert Bbox.count == 0
@@ -215,8 +219,35 @@ def crop_bboxes(frames, im_path):
 def main():
     """ Main"""
 
+    #READ AND PROCESS ALL .MAT FILES IN DIRECTORY AND SAVE RESULTS TO ./RESULTS
+    data_directory = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Anna'
+
+    results_dir = os.path.join(data_directory, 'results')
     
-    #OS CODE HERE TO READ ALL .MAT FILES IN DIRECTORY
+    if(os.path.exists(results_dir)):
+        shutil.rmtree(results_dir)
+        
+    os.mkdir(results_dir)
+    os.mkdir(os.path.join(results_dir, 'images'))
+    os.mkdir(os.path.join(results_dir, 'annotations'))
+
+    for file in os.listdir(data_directory):
+        if file.endswith('.tif'):
+            image_path = os.path.join(data_directory, file)
+            data_path = image_path + '.mat'
+            if os.path.exists(data_path):
+                im_frames = process_image(image_path)
+                annotations = load_annotations(data_path)
+                add_bboxes(annotations)
+                image_save_path = os.path.join(results_dir, 'images', file)
+                data_save_path = os.path.join(results_dir, 'annotations', file)
+                crop_bboxes(im_frames, image_save_path, data_save_path)
+
+                
+                
+
+
+    """
     
     #Read in image and store z_stack in array
     image_path = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Anna/11_X13223_Y20674.tif'
@@ -228,7 +259,7 @@ def main():
     add_bboxes(annotations)
 
     crop_bboxes(im_frames, image_path)
-    
+    """
 
 if __name__ == "__main__":
     """Run from Command Line"""
