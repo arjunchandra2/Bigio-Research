@@ -9,6 +9,8 @@ from PIL import Image
 from skimage import io
 from matplotlib import pyplot as plt
 import random
+import os
+
 
 WINDOW_SIZE = 300
 CLASS_NUM = {'Defect': 0, 'Swelling': 1, 'Vesicle': 2}
@@ -48,6 +50,7 @@ def load_annotations(file_path):
     annotations_dict = {'class_type': class_type, 'z_plane': z_plane, 'bbox_coord': bbox_coord}
     
     return annotations_dict
+
 
 def process_image(image_path):
     """
@@ -130,14 +133,31 @@ def save_annotations_yolo(left, upper, bboxes, im_path):
      
     f.close()   
 
+
+def remove_blurry(frames):
+    """
+    - Removes bounding boxes from first two and last two planes since they are too blurry for annotations
+    and only show up in the data due to bugs in original annotation software 
+    """
+    for z in [1,2,len(frames)-1, len(frames)]:
+        if z in Bbox.bboxes_unseen:
+            Bbox.count -= len(Bbox.bboxes_unseen[z])
+            Bbox.bboxes_unseen[z] = []
+
+
 def crop_bboxes(frames, im_path):
     """
     - Crop images around bounding box in each frame as we go and check for overlap
-    - Note that z-plane is one-indexed as opposed to frames array
+    - Z-plane is one-indexed as opposed to frames array
     - Images are saved to working directory with z_plane and crop number
+    - Remove bounding boxes from first two and last two planes to clean up buggy annotations 
     """
 
-    for i in range(len(frames)):
+    remove_blurry(frames)
+
+    #range(2,len(frames)-2) to not include first two and last two planes since they are too blurry anyways
+    #alter loop bounds depending on dataset
+    for i in range(2,len(frames)-2):
         if i + 1 in Bbox.bboxes_unseen:
             #crop number
             j = 0
@@ -196,7 +216,7 @@ def main():
     """ Main"""
 
     
-    #OS LOGIC HERE TO READ ALL .MAT FILES IN DIRECTORY
+    #OS CODE HERE TO READ ALL .MAT FILES IN DIRECTORY
     
     #Read in image and store z_stack in array
     image_path = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Anna/11_X13223_Y20674.tif'

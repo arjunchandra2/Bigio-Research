@@ -54,4 +54,6 @@ due to randomness
 Bbox.py:
 
 - We need to clean up the data from the annotation software when we load it in since there are 
-some bugs resulting in duplicate data 
+some bugs resulting in duplicate data and annotations from blurry planes
+-
+
