@@ -32,6 +32,8 @@ def add_bboxes(annotations):
         
         bbox = Bbox(coords[0], coords[1], coords[2], coords[3], z_plane, class_name)
 
+    #for ensuring clean annotations
+    Bbox.last_bbox = None
 
 def load_annotations(file_path):
     """
@@ -219,6 +221,16 @@ def crop_bboxes(frames, im_save_path, data_save_path):
 
 def main():
     """ Main"""
+    
+    d_path = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Anna/11_X23751_Y9179.tif.mat'
+    annotations = load_annotations(d_path)
+    add_bboxes(annotations)
+
+    for bbox in Bbox.bboxes_unseen[23]:
+       print(bbox)
+
+       
+    """
 
     #READ AND PROCESS ALL .MAT FILES IN DIRECTORY AND SAVE RESULTS TO ./RESULTS
     data_directory = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Anna'
@@ -253,7 +265,7 @@ def main():
                 else:
                     crop_bboxes(im_frames, image_save_path, data_save_path)
 
-        
+        """
 
 if __name__ == "__main__":
     """Run from Command Line"""
