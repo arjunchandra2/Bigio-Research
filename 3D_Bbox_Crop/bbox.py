@@ -23,13 +23,14 @@ class Bbox:
         self.class_name = class_name
 
         #update Class variables 
-        Bbox.count += 1
         if z_plane in Bbox.bboxes_unseen:
             #do not add duplicates from annotation file
             if self not in Bbox.bboxes_unseen[z_plane]:
              Bbox.bboxes_unseen[z_plane].append(self)
+             Bbox.count += 1
         else:
             Bbox.bboxes_unseen[z_plane] = [self]
+            Bbox.count += 1
 
     
     def center_x(self):
