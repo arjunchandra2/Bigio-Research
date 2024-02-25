@@ -23,7 +23,7 @@ def process_file(filename, bbox_areas):
         #add area
         bbox_areas.append(bbox[2]*bbox[3])
 
-
+        
 def main():
     """ Main"""
 
@@ -39,14 +39,14 @@ def main():
     
     figure, axis = plt.subplots(1, 2) 
 
-    axis[0].hist(bbox_areas, bins=15, edgecolor = "black")
+    axis[0].hist(bbox_areas, bins=20, edgecolor = "black")
     axis[0].set_title("Counts of Bounding Boxes by Area")
     axis[0].set_xlabel("Bounding Box Area (px)")
     axis[0].set_ylabel("Count")
     axis[0].minorticks_on()
 
 
-    N, bins, patches = axis[1].hist(np.array(bbox_areas)/1024, bins=15, edgecolor = "black")
+    N, bins, patches = axis[1].hist(np.array(bbox_areas)/1024, bins=20, edgecolor = "black")
     for i in range(0,4):
         patches[i].set_facecolor('r')
     axis[1].set_title("Counts of Bounding Boxes by Area After Pooling")
