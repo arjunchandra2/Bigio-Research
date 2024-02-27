@@ -37,6 +37,19 @@ The `data.yaml` file contains configuration values used by the model to locate i
 and map class names to class_id's.
 
 
+Augmentation:
+We will add an option to add augmentation when the images are cropped. Here are the augmentations that will be 
+implemented:
+
+1. 10x Random croppings 
+2. 4x Orientations (no rotation, 1x rotation 90 degrees right, 2x rotation 90 degrees right, 3x rotation 90 degrees right)
+3. 2x Channel Swapping: (R, G, B) and (R-1.4B, G, B) <- This models polarizers when changing orientation of defects 
+
+This will scale the dataset by a factor of 80x. We can consider modifying this later if augmentation is redundant
+and does not improve training.
+
+
+
 SCRIPT SPECIFIC NOTES
 
 main.py:
