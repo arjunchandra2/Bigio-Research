@@ -9,7 +9,7 @@ Notes:
 - Directories are listed in the order of which the scripts should be run to prepare the dataset correctly
 - 3D_Bbox_Crop creates /results/images and /results/annotations -> background.py adds background images to /results/images 
 - Downsampling_Distribution does not rely on the other preprocessing steps, it parses raw dataset 
-
+- background.py will only use Anna's data since it is important that no objects are present in unlabeled images
 
 Ultralytics Dataset Recommendations:
 1. >1,500 images per class 
