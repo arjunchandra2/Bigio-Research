@@ -1,0 +1,18 @@
+This folder contains all of the scripts used for dataset preparation and other notes.
+
+Directory: 
+3D_Bbox_Crop - Crop bboxes from 3d image stored as .tif file with option for augmentations 
+background.py - Add background images to dataset *Needs to be implemented as of 2/29
+Downsampling_Distribution - Get distribution of bounding box sizes in dataset 
+
+Notes:
+- Directories are listed in the order of which the scripts should be run to prepare the dataset correctly
+- 3D_Bbox_Crop creates /results/images and /results/annotations -> background.py adds background images to /results/images 
+- Downsampling_Distribution does not rely on the other preprocessing steps, it parses raw dataset 
+
+
+Ultralytics Dataset Recommendations:
+1. >1,500 images per class 
+2. >10,000 instances per class labeled
+3. Partial labeling is detrimental 
+4. 0-10% background images (no objects present) to reduce FP rate - no correspniding .txt label required
