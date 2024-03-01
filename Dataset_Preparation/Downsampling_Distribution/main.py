@@ -27,7 +27,7 @@ def process_file(filename, bbox_areas):
 def main():
     """ Main"""
 
-    data_directory = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Imaging_Anna'
+    data_directory = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Dataset'
 
     bbox_areas = []
 
@@ -47,8 +47,9 @@ def main():
 
 
     N, bins, patches = axis[1].hist(np.array(bbox_areas)/1024, bins=20, edgecolor = "black")
-    for i in range(0,4):
-        patches[i].set_facecolor('r')
+    for i, bin in enumerate(bins):
+        if bin < .99:
+            patches[i].set_facecolor('r')
     axis[1].set_title("Counts of Bounding Boxes by Area After Pooling")
     axis[1].set_xlabel("Bounding Box Area (px)")
     axis[1].set_ylabel("Count")
