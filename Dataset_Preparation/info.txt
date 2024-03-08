@@ -9,10 +9,27 @@ Notes:
 - Directories are listed in the order of which the scripts should be run to prepare the dataset correctly
 - 3D_Bbox_Crop creates /results/images and /results/annotations -> background.py adds background images to /results/images 
 - Downsampling_Distribution does not rely on the other preprocessing steps, it parses raw dataset 
-- background.py will only use Anna's data since it is important that no objects are present in unlabeled images
+- background.py will only use Anna's data since it is important that no objects are present in unlabeled images and I am likely
+to have missed some defects
 
 Ultralytics Dataset Recommendations:
 1. >1,500 images per class 
 2. >10,000 instances per class labeled
 3. Partial labeling is detrimental 
-4. 0-10% background images (no objects present) to reduce FP rate - no correspniding .txt label required
+4. 0-10% background images (no objects present) to reduce FP rate - no corresponding .txt label required in labels
+
+Ultralytics Training Recommendations:
+Epochs: Start with 300 epochs. If this overfits early then you can reduce epochs. If overfitting does not occur after
+ 300 epochs, train longer, i.e. 600, 1200 etc epochs.
+Image size: COCO trains at native resolution of --img 640, though due to the high amount of small objects in the 
+dataset it can benefit from training at higher resolutions such as --img 1280. If there are many small objects then 
+custom datasets will benefit from training at native or higher resolution. Best inference results are obtained at the 
+same --img as the training was run at, i.e. if you train at --img 1280 you should also test and detect at --img 1280.
+Batch size: Use the largest --batch-size that your hardware allows for. Small batch sizes produce poor batchnorm 
+statistics and should be avoided.
+Hyperparameters: Default hyperparameters are in hyp.scratch.yaml. We recommend you train with default hyperparameters
+ first before thinking of modifying any. In general, increasing augmentation hyperparameters will reduce and delay 
+ overfitting, allowing for longer trainings and higher final mAP. Reduction in loss component gain hyperparameters 
+ like hyp['obj'] will help reduce overfitting in those specific loss components. For an automated method of optimizing 
+ these hyperparameters, see our Hyperparameter Evolution Tutorial.
+
