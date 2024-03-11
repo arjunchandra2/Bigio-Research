@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-main.py - driver code for cropping annotations
+main.py - Cropping bounding boxex and creating new directory with images and corresponding annotations 
 """
 from bbox import Bbox
 #from mat4py import loadmat
@@ -13,10 +13,16 @@ import os
 import shutil
 import time
 
+#class encodings 
+CLASS_NUM = {'Defect': 0, 'Swelling': 1, 'Vesicle': 2}
+#Keep track of number of images created and number of bboxes missed for run info
+NUM_MISSED = 0
+NUM_IMAGES = 0 
 
+#Parameters to set for cropping
 WINDOW_SIZE = 300
 AUGMENTATION = False
-CLASS_NUM = {'Defect': 0, 'Swelling': 1, 'Vesicle': 2}
+
 
 def add_bboxes(annotations):
     """
@@ -123,6 +129,7 @@ def save_annotations_yolo(left, upper, bboxes, data_save_path, z, i):
 
     f = open(file_path, 'w')
 
+
     for bbox in bboxes:
         c_id = CLASS_NUM[bbox.class_name]
         cx = bbox.center_x()
@@ -160,6 +167,8 @@ def crop_bboxes(frames, im_save_path, data_save_path):
     - Images are saved to working directory with z_plane and crop number
     - Remove bounding boxes from first two and last two planes to clean up buggy annotations 
     """
+    global NUM_MISSED
+    global NUM_IMAGES
 
     remove_blurry(frames)
 
@@ -178,6 +187,7 @@ def crop_bboxes(frames, im_save_path, data_save_path):
 
                 #window size is too small to capture bbox - we just skip (can occur due to buggy annotations)
                 if current_bbox.width > WINDOW_SIZE or current_bbox.height > WINDOW_SIZE:
+                    NUM_MISSED += 1
                     continue
                 
                 #set random cropping bounds - can be used for data augmentation if model architecture is not robust to translation
@@ -220,6 +230,8 @@ def crop_bboxes(frames, im_save_path, data_save_path):
 
                 i += 1
 
+                NUM_IMAGES += 1
+
     
     assert Bbox.count == 0
     
@@ -228,7 +240,8 @@ def crop_bboxes(frames, im_save_path, data_save_path):
 
 def main():
     """ Main"""
-    
+
+
     #READ AND PROCESS ALL .MAT FILES IN DIRECTORY AND SAVE RESULTS TO ./RESULTS
     data_directory = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Dataset'
 
@@ -267,7 +280,14 @@ def main():
 
     finish_time = time.perf_counter()
 
+    print()
     print("Succesfully created dataset in", finish_time-start_time, "seconds.")
+    print("Dataset size:", NUM_IMAGES, "images")
+    print("A total of", NUM_MISSED, "bounding boxes could not be cropped with a window size of", WINDOW_SIZE)
+    print("A total of", Bbox.BBOXES_REMOVED, "bounding boxes were removed as unclean annotations")
+
+
+
 if __name__ == "__main__":
     """Run from Command Line"""
     main()

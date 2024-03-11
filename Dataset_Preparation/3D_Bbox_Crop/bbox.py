@@ -7,6 +7,9 @@ class Bbox:
     #threshold for bbox cropping
     OVERLAP_THRESHOLD = 0.8
 
+    #count of number of bboxes removed as a result of checking annotations 
+    BBOXES_REMOVED = 0
+
     #number of bboxes left - should be zero when an image has been fully processed
     #this must be decremented by the *caller* code 
     count = 0
@@ -60,6 +63,7 @@ class Bbox:
                 print(Bbox.last_bbox)
                 Bbox.bboxes_unseen[self.z_plane].remove(self)
                 Bbox.count -= 1
+                Bbox.BBOXES_REMOVED += 1
     
 
     def coords_equal(self, other):
