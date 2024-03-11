@@ -13,7 +13,7 @@ class Bbox:
     #maintain a list of all unseen bounding boxes 
     bboxes_unseen = {}
 
-    #keep track of last bbox loaded to ensure data is clean
+    #keep track of last bbox loaded to ensure data is clean/annotations are not jumping
     last_bbox = None
 
     
