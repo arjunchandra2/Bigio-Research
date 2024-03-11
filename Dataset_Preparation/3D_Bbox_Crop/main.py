@@ -168,7 +168,7 @@ def crop_bboxes(frames, im_save_path, data_save_path):
         if z + 1 in Bbox.bboxes_unseen:
             #crop number
             i = 0
-            #while there are boxes left to process in z_plane z+1
+            #while there are boxes left to process in z_plane: z+1
             while(Bbox.bboxes_unseen[z+1]):
                 #get the last bbox
                 current_bbox = Bbox.bboxes_unseen[z+1].pop()
