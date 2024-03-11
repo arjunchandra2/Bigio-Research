@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-main.py - Cropping bounding boxex and creating new directory with images and corresponding annotations 
+main.py - Cropping bounding boxes and creating new directory with images and corresponding annotations 
 """
 from bbox import Bbox
 #from mat4py import loadmat
