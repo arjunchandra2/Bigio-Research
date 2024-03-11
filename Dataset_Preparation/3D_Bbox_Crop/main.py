@@ -11,6 +11,7 @@ from matplotlib import pyplot as plt
 import random
 import os
 import shutil
+import time
 
 
 WINDOW_SIZE = 300
@@ -172,7 +173,13 @@ def crop_bboxes(frames, im_save_path, data_save_path):
             while(Bbox.bboxes_unseen[z+1]):
                 #get the last bbox
                 current_bbox = Bbox.bboxes_unseen[z+1].pop()
+
                 Bbox.count -= 1
+
+                #window size is too small to capture bbox - we just skip (can occur due to buggy annotations)
+                if current_bbox.width > WINDOW_SIZE or current_bbox.height > WINDOW_SIZE:
+                    continue
+                
                 #set random cropping bounds - can be used for data augmentation if model architecture is not robust to translation
                 #ensuring the window does not exceed the image (this logic might need checking)
                 if current_bbox.top_left_x - WINDOW_SIZE + current_bbox.width > 0:
@@ -222,9 +229,11 @@ def crop_bboxes(frames, im_save_path, data_save_path):
 def main():
     """ Main"""
     
-    
     #READ AND PROCESS ALL .MAT FILES IN DIRECTORY AND SAVE RESULTS TO ./RESULTS
     data_directory = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Dataset'
+
+    #timing
+    start_time = time.perf_counter()
 
     results_dir = os.path.join(data_directory, 'results')
     
@@ -256,7 +265,9 @@ def main():
                 else:
                     crop_bboxes(im_frames, image_save_path, data_save_path)
 
-  
+    finish_time = time.perf_counter()
+
+    print("Succesfully created dataset in", finish_time-start_time, "seconds.")
 if __name__ == "__main__":
     """Run from Command Line"""
     main()
