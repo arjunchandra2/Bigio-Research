@@ -10,7 +10,6 @@ from skimage import io
 from matplotlib import pyplot as plt
 import random
 import os
-import shutil
 import time
 
 #class encodings 
@@ -241,7 +240,6 @@ def crop_bboxes(frames, im_save_path, data_save_path):
 def main():
     """ Main"""
 
-
     #READ AND PROCESS ALL .MAT FILES IN DIRECTORY AND SAVE RESULTS TO ./RESULTS
     data_directory = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Dataset'
 
@@ -251,7 +249,8 @@ def main():
     results_dir = os.path.join(data_directory, 'results')
     
     if(os.path.exists(results_dir)):
-        shutil.rmtree(results_dir)
+        os.system('rm -fr "%s"' % results_dir)
+
         
     os.mkdir(results_dir)
     os.mkdir(os.path.join(results_dir, 'images'))
