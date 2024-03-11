@@ -16,6 +16,7 @@ def process_file(filename, bbox_areas):
       planes but we will include this anyways since they will all be cropped
       and included seperately in the dataset so our counts should reflect this
       (Augmentation will also scale by the same factor so the distrution is still valid)
+    - Does not filter out unlcean annotations since it is just to get a sense of distribution
     """
     data = loadmat(filename)
     bbox_coords = data['annotations'][0][5]
@@ -36,7 +37,7 @@ def main():
         if file.endswith('.mat'):
             process_file(os.path.join(data_directory, file), bbox_areas)
 
-    
+    print(len(bbox_areas))
     figure, axis = plt.subplots(1, 2) 
 
     axis[0].hist(bbox_areas, bins=20, edgecolor = "black")
