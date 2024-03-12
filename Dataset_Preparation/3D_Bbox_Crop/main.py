@@ -85,7 +85,6 @@ def get_overlaps(left, upper, right, lower, z_plane):
     """
     - Returns list of bounding boxes exceeding overlap threshold for given window in given plane
     - Crops BBoxes as necessary
-    - Remove Bboxes from tracking
     """
     overlaps = []
     
@@ -111,11 +110,6 @@ def get_overlaps(left, upper, right, lower, z_plane):
                 bbox.height = height_inside
                 overlaps.append(bbox)
 
-    #remove overlaps from tracked bboxes
-    for overlap in overlaps:
-        Bbox.bboxes_unseen[z_plane].remove(overlap)
-        Bbox.count -= 1
-
     return overlaps
 
 def save_annotations_yolo(left, upper, bboxes, data_save_path, z, i):
@@ -127,7 +121,6 @@ def save_annotations_yolo(left, upper, bboxes, data_save_path, z, i):
     file_path = data_save_path[:-3] + '(' + str(z+1) + '_' + str(i) + ')' +  '.txt'
 
     f = open(file_path, 'w')
-
 
     for bbox in bboxes:
         c_id = CLASS_NUM[bbox.class_name]
@@ -215,7 +208,12 @@ def crop_bboxes(frames, im_save_path, data_save_path):
                 lower = upper + WINDOW_SIZE
 
                 overlap_bboxes = get_overlaps(left, upper, right, lower, z+1)
+                #remove overlaps from tracked bboxes
+                for overlap in overlap_bboxes:
+                    Bbox.bboxes_unseen[z+1].remove(overlap)
+                    Bbox.count -= 1
 
+                #add curent bbox before creating annotation
                 overlap_bboxes.append(current_bbox)
 
                 cropped_im = frames[z].crop((left, upper, right, lower))
