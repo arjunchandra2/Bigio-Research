@@ -257,7 +257,7 @@ def main():
     os.mkdir(os.path.join(results_dir, 'annotations'))
 
     for file in os.listdir(data_directory):
-        if file.endswith('.tif'):
+        if file.endswith('.tif') and '13223' in file:
             image_path = os.path.join(data_directory, file)
             data_path = image_path + '.mat'
             if os.path.exists(data_path):
