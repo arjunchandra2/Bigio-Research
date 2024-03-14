@@ -3,7 +3,6 @@
 main.py - Cropping bounding boxes and creating new directory with images and corresponding annotations 
 """
 from bbox import Bbox
-#from mat4py import loadmat
 from scipy.io import loadmat
 from PIL import Image
 from skimage import io
@@ -11,6 +10,7 @@ import numpy as np
 import random
 import os
 import time
+
 
 #class encodings 
 CLASS_NUM = {'Defect': 0, 'Swelling': 1, 'Vesicle': 2}
@@ -24,7 +24,7 @@ WINDOW_SIZE = 300
 
 #Augmentation parameters
 AUGMENTATION = True
-NUM_CROPS = 3
+NUM_CROPS = 2
 
 
 def add_bboxes(annotations):
@@ -143,9 +143,11 @@ def get_overlaps(left, upper, right, lower, z_plane):
 
     return overlaps
 
-def save_annotations_yolo(left, upper, bboxes, data_save_path, z, i):
+
+def save_annotations_yolo(left, upper, bboxes, data_save_path, z, i, theta = 0):
     """
     - Save annotations in yolo format .txt file matching image path
+    - optional theta parameter to rotate bounding boxes (used for augmentation)
     """
 
     #change extension
@@ -165,6 +167,25 @@ def save_annotations_yolo(left, upper, bboxes, data_save_path, z, i):
         cy_n = (cy-upper)/WINDOW_SIZE
         width_n = width / WINDOW_SIZE
         height_n = height / WINDOW_SIZE
+
+        #rotate bounding box if rotation is specified
+        if theta != 0:
+            #translate (cx_n, cxy_n) to coordinate system with origin at center
+            cx_coordinate = cx_n - 0.5
+            cy_coordinate = 0.5 - cy_n 
+            #counterclockwise rotation by theta
+            cx_rotated = cx_coordinate * np.cos(np.deg2rad(theta)) - cy_coordinate * np.sin(np.deg2rad(theta))
+            cy_rotated = cx_coordinate * np.sin(np.deg2rad(theta)) + cy_coordinate * np.cos(np.deg2rad(theta))
+            #undo coordinate translation 
+            cx_n = 0.5 + cx_rotated
+            cy_n = 0.5 - cy_rotated
+
+            #swap width and height of bbox if needed
+            if theta == 90 or theta == 270:
+                temp_width = width_n
+                width_n = height_n
+                height_n = temp_width
+
 
         entry = str(c_id) + ' ' + str(cx_n) + ' ' + str(cy_n) + ' ' + str(width_n) + ' ' + str(height_n) + '\n'
         f.write(entry)
@@ -268,10 +289,7 @@ def crop_bboxes(frames, im_save_path, data_save_path):
 def crop_bboxes_aug(frames, im_save_path, data_save_path):
     """
     - Same as crop_bboxes but with augmentation applied (see info.txt)
-    - Still need to add rotation augmentation with bbox transformations:
-    for theta in [0,90,180,270]:
-        original.rotate(theta)
-        rotate_bounding_box(theta)
+    - bboxes are rotated by save_annotations_yolo
     """
     global NUM_MISSED
     global NUM_IMAGES
@@ -318,7 +336,10 @@ def crop_bboxes_aug(frames, im_save_path, data_save_path):
                 else:
                     topy = current_bbox.top_left_y
 
-                for k in range(NUM_CROPS):
+                #AUGMENTATION
+                    
+                #multiple random croppings around bounding box
+                for n in range(NUM_CROPS):
                     #choose random window bounds
                     left = random.randint(leftx, rightx)
                     upper = random.randint(bottomy, topy)
@@ -337,19 +358,25 @@ def crop_bboxes_aug(frames, im_save_path, data_save_path):
 
                     cropped_im = frames[z].crop((left, upper, right, lower))
 
+                    #regular and transformed/swapped channels
                     for channels in ["original", "swapped"]:
                         if channels == "swapped":
                             cropped_im = swap_channels(cropped_im)
+                        
+                        #4 orientations
+                        for theta in [0, 90, 180, 270]:
+                            print(theta, i)
+                            cropped_im_rotated = cropped_im.rotate(theta)
 
-                        save_path = im_save_path[:-3] + '(' + str(z+1) + '_' + str(i) + ')' +  '.png'
-                        print("Saving image......." + save_path)
-                        cropped_im.save(save_path)
-    
-                        #MODIFY ANNOTATION FORMAT HERE
-                        save_annotations_yolo(left, upper, overlap_bboxes, data_save_path, z, i)
+                            save_path = im_save_path[:-3] + '(' + str(z+1) + '_' + str(i) + ')' +  '.png'
+                            print("Saving image......." + save_path)
+                            cropped_im_rotated.save(save_path)
+        
+                            #MODIFY ANNOTATION FORMAT HERE
+                            save_annotations_yolo(left, upper, overlap_bboxes, data_save_path, z, i, theta)
 
-                        i += 1
-                        NUM_IMAGES += 1
+                            i += 1
+                            NUM_IMAGES += 1
 
                 
     assert Bbox.count == 0
@@ -405,7 +432,6 @@ def main():
     print("Dataset size:", NUM_IMAGES, "images")
     print("A total of", NUM_MISSED, "bounding boxes could not be cropped with a window size of", WINDOW_SIZE)
     print("A total of", Bbox.BBOXES_REMOVED, "bounding boxes were removed as unclean annotations")
-
 
   
 
