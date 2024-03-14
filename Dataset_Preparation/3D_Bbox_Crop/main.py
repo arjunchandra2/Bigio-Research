@@ -365,7 +365,6 @@ def crop_bboxes_aug(frames, im_save_path, data_save_path):
                         
                         #4 orientations
                         for theta in [0, 90, 180, 270]:
-                            print(theta, i)
                             cropped_im_rotated = cropped_im.rotate(theta)
 
                             save_path = im_save_path[:-3] + '(' + str(z+1) + '_' + str(i) + ')' +  '.png'
