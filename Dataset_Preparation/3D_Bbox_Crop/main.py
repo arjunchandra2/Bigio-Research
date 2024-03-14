@@ -7,20 +7,24 @@ from bbox import Bbox
 from scipy.io import loadmat
 from PIL import Image
 from skimage import io
-from matplotlib import pyplot as plt
+import numpy as np
 import random
 import os
 import time
 
 #class encodings 
 CLASS_NUM = {'Defect': 0, 'Swelling': 1, 'Vesicle': 2}
+
 #Keep track of number of images created and number of bboxes missed for run info
 NUM_MISSED = 0
 NUM_IMAGES = 0 
 
-#Parameters to set for cropping
+#Parameter to set for cropping
 WINDOW_SIZE = 300
-AUGMENTATION = False
+
+#Augmentation parameters
+AUGMENTATION = True
+NUM_CROPS = 3
 
 
 def add_bboxes(annotations):
@@ -79,6 +83,33 @@ def process_image(image_path):
         pil_frames.append(image)
         
     return pil_frames
+
+
+def swap_channels_lib(image):
+    """
+    - Same as swap_channels but using PIL library calls 
+    - 6.5s for 10k images
+    """
+    r, g, b = image.split()
+    r = abs(np.asarray(r)-1.4*np.asarray(b))
+    r = Image.fromarray(r.clip(0, 255).astype(np.uint8))
+    
+    return Image.merge("RGB", (r,g,b))
+
+
+def swap_channels(image):
+    """
+    - Applies the following transformation to image channels and returns new image
+    (R,G,B) -> (R-1.4B, G, B)
+    - 4.5s for 10k images
+    """
+    channels = np.array(image)
+    #apply transformation
+    channels[:,:,0] = abs(channels[:,:,0] - 1.4*channels[:,:,2])
+    #keep values in valid range 
+    channels = channels.clip(0,255)
+
+    return Image.fromarray(channels)
 
 
 def get_overlaps(left, upper, right, lower, z_plane):
@@ -234,6 +265,96 @@ def crop_bboxes(frames, im_save_path, data_save_path):
     
                 
 
+def crop_bboxes_aug(frames, im_save_path, data_save_path):
+    """
+    - Same as crop_bboxes but with augmentation applied (see info.txt)
+    - Still need to add rotation augmentation with bbox transformations:
+    for theta in [0,90,180,270]:
+        original.rotate(theta)
+        rotate_bounding_box(theta)
+    """
+    global NUM_MISSED
+    global NUM_IMAGES
+
+    remove_blurry(frames)
+
+    #range(2,len(frames)-2) to not include first two and last two planes since they are too blurry anyways
+    #alter loop bounds depending on dataset
+    for z in range(2,len(frames)-2):
+        if z + 1 in Bbox.bboxes_unseen:
+            #crop number
+            i = 0
+            #while there are boxes left to process in z_plane: z+1
+            while(Bbox.bboxes_unseen[z+1]):
+                #get the last bbox
+                current_bbox = Bbox.bboxes_unseen[z+1].pop()
+
+                Bbox.count -= 1
+
+                #window size is too small to capture bbox - we just skip (can occur due to buggy annotations)
+                if current_bbox.width > WINDOW_SIZE or current_bbox.height > WINDOW_SIZE:
+                    NUM_MISSED += 1
+                    continue
+
+                all_overlaps = []
+                
+                #set random cropping bounds - can be used for data augmentation if model architecture is not robust to translation
+                #ensuring the window does not exceed the image (this logic might need checking)
+                if current_bbox.top_left_x - WINDOW_SIZE + current_bbox.width > 0:
+                    leftx = current_bbox.top_left_x - WINDOW_SIZE + current_bbox.width
+                else:
+                    leftx = 0
+                if current_bbox.top_left_x + WINDOW_SIZE > frames[z].size[0]:
+                    rightx = current_bbox.top_left_x - (current_bbox.top_left_x + WINDOW_SIZE - frames[z].size[0]) 
+                else:
+                    rightx = current_bbox.top_left_x
+
+                if current_bbox.top_left_y - WINDOW_SIZE + current_bbox.height > 0:
+                    bottomy = current_bbox.top_left_y - WINDOW_SIZE + current_bbox.height
+                else:
+                    bottomy = 0
+                if current_bbox.top_left_y + WINDOW_SIZE > frames[z].size[1]:
+                    topy = current_bbox.top_left_y - (current_bbox.top_left_y + WINDOW_SIZE - frames[z].size[1]) 
+                else:
+                    topy = current_bbox.top_left_y
+
+                for k in range(NUM_CROPS):
+                    #choose random window bounds
+                    left = random.randint(leftx, rightx)
+                    upper = random.randint(bottomy, topy)
+                    right = left + WINDOW_SIZE
+                    lower = upper + WINDOW_SIZE
+
+                    overlap_bboxes = get_overlaps(left, upper, right, lower, z+1)
+                    
+                    #add overlaps to all_overlaps
+                    for overlap in overlap_bboxes:
+                        if overlap not in all_overlaps:
+                            all_overlaps.append(overlap)
+                    
+                    #add curent bbox before creating annotation
+                    overlap_bboxes.append(current_bbox)
+
+                    cropped_im = frames[z].crop((left, upper, right, lower))
+
+                    for channels in ["original", "swapped"]:
+                        if channels == "swapped":
+                            cropped_im = swap_channels(cropped_im)
+
+                        save_path = im_save_path[:-3] + '(' + str(z+1) + '_' + str(i) + ')' +  '.png'
+                        print("Saving image......." + save_path)
+                        cropped_im.save(save_path)
+    
+                        #MODIFY ANNOTATION FORMAT HERE
+                        save_annotations_yolo(left, upper, overlap_bboxes, data_save_path, z, i)
+
+                        i += 1
+                        NUM_IMAGES += 1
+
+                
+    assert Bbox.count == 0
+    
+
 
 def main():
     """ Main"""
@@ -255,12 +376,14 @@ def main():
     os.mkdir(os.path.join(results_dir, 'annotations'))
 
     for file in os.listdir(data_directory):
+        #currently only using 1 image from directory for running locally
         if file.endswith('.tif') and '13223' in file:
             image_path = os.path.join(data_directory, file)
             data_path = image_path + '.mat'
             if os.path.exists(data_path):
                 #Read in image and store z_stack in array of PIL objects
                 im_frames = process_image(image_path)
+                
                 #reading .mat and adding bboxes to Bbox class
                 annotations = load_annotations(data_path)
                 add_bboxes(annotations)
@@ -269,11 +392,11 @@ def main():
                 data_save_path = os.path.join(results_dir, 'annotations', file)
 
                 #crop and save bboxes using PIL img array 'frames' and Bbox class 
-                
                 if AUGMENTATION:
-                   raise NotImplementedError
+                    crop_bboxes_aug(im_frames, image_save_path, data_save_path)
                 else:
                     crop_bboxes(im_frames, image_save_path, data_save_path)
+               
 
     finish_time = time.perf_counter()
 
@@ -284,7 +407,11 @@ def main():
     print("A total of", Bbox.BBOXES_REMOVED, "bounding boxes were removed as unclean annotations")
 
 
+  
 
 if __name__ == "__main__":
     """Run from Command Line"""
     main()
+
+
+

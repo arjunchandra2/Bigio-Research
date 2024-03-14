@@ -72,8 +72,11 @@ class Bbox:
 
     
     def __eq__(self, other) -> bool:
-        return self.top_left_x == other.top_left_x and self.top_left_y == other.top_left_y and self.width == other.width \
-        and self.height == other.height and self.z_plane == other.z_plane
+        if isinstance(other, Bbox):
+            return self.top_left_x == other.top_left_x and self.top_left_y == other.top_left_y and self.width == other.width \
+            and self.height == other.height and self.z_plane == other.z_plane
+
+        return NotImplemented
     
 
     def __str__(self) -> str:
