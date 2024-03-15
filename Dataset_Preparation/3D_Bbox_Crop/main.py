@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """
-main.py - Cropping bounding boxes and creating new directory with images and corresponding annotations  
-
-*Data directory and annotations are in YOLO format 
+main.py - Cropping bounding boxes and creating new directory with images and corresponding annotations in YOLO format
 """
+
 from bbox import Bbox
 from scipy.io import loadmat
 from PIL import Image
@@ -378,6 +377,11 @@ def crop_bboxes_aug(frames, im_save_path, data_save_path):
 
                             i += 1
                             NUM_IMAGES += 1
+
+                #remove all of the bboxes that appeared in the random croppings
+                for bbox in all_overlaps:
+                    Bbox.bboxes_unseen[z+1].remove(bbox)
+                    Bbox.count -= 1
 
                 
     assert Bbox.count == 0
