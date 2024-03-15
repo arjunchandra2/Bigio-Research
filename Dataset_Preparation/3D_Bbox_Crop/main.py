@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
-main.py - Cropping bounding boxes and creating new directory with images and corresponding annotations 
+main.py - Cropping bounding boxes and creating new directory with images and corresponding annotations  
+
+*Data directory and annotations are in YOLO format 
 """
 from bbox import Bbox
 from scipy.io import loadmat

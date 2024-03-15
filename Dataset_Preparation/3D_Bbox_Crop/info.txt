@@ -17,8 +17,16 @@ z-stack. **This could be inefficient if there are a large number of bounding box
 
 Saving Cropped Images and Annotations:
 
-Cropped images with annotations should be saved in a new folder in the working directory named ./results where images are saved in 
-./results/images and the corresponding annotations are saved in ./results/annotations
+Cropped images with annotations should be saved in a new folder in the working directory named ./results and the images will be split into
+train and val folders according to yolo format:
+
+results
+   |train
+        |images
+        |labels
+    |val
+        |images
+        |labels
 
 Annotation Formats:
 
@@ -48,6 +56,7 @@ implemented:
 This will scale the dataset by a factor of 80x. We can consider modifying this later if augmentation is redundant
 and does not improve training.
 
+Validation set will not include augmentation
 
 
 SCRIPT SPECIFIC NOTES
