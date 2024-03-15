@@ -427,7 +427,7 @@ def main():
     finish_time = time.perf_counter()
 
     print()
-    print("Succesfully created dataset in ~", (finish_time-start_time)%60, "minutes.")
+    print("Succesfully created dataset in ~", (finish_time-start_time)//60, "minutes.")
     print("Dataset size:", NUM_IMAGES, "images")
     print("A total of", NUM_MISSED, "bounding boxes could not be cropped with a window size of", WINDOW_SIZE)
     print("A total of", Bbox.BBOXES_REMOVED, "bounding boxes were removed as unclean annotations")
