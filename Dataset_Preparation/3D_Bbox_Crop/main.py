@@ -18,14 +18,18 @@ CLASS_NUM = {'Defect': 0, 'Swelling': 1, 'Vesicle': 2}
 
 #Keep track of number of images created and number of bboxes missed for run info
 NUM_MISSED = 0
-NUM_IMAGES = 0 
+NUM_VAL = 0
+NUM_TRAIN = 0
 
 #Parameter to set for cropping
 WINDOW_SIZE = 300
 
+#percent of data added to validation set
+VAL_SPLIT = 0.1
+
 #Augmentation parameters
 AUGMENTATION = True
-NUM_CROPS = 2
+NUM_CROPS = 10
 
 
 def add_bboxes(annotations):
@@ -213,7 +217,8 @@ def crop_bboxes(frames, im_save_path, data_save_path):
     - Remove bounding boxes from first two and last two planes to clean up buggy annotations 
     """
     global NUM_MISSED
-    global NUM_IMAGES
+    global NUM_VAL
+    global NUM_TRAIN
 
     remove_blurry(frames)
 
@@ -280,7 +285,7 @@ def crop_bboxes(frames, im_save_path, data_save_path):
 
                 i += 1
 
-                NUM_IMAGES += 1
+                NUM_TRAIN += 1
 
     
     assert Bbox.count == 0
@@ -293,7 +298,8 @@ def crop_bboxes_aug(frames, im_save_path, data_save_path):
     - bboxes are rotated by save_annotations_yolo
     """
     global NUM_MISSED
-    global NUM_IMAGES
+    global NUM_VAL
+    global NUM_TRAIN
 
     remove_blurry(frames)
 
@@ -303,6 +309,7 @@ def crop_bboxes_aug(frames, im_save_path, data_save_path):
         if z + 1 in Bbox.bboxes_unseen:
             #crop number
             i = 0
+
             #while there are boxes left to process in z_plane: z+1
             while(Bbox.bboxes_unseen[z+1]):
                 #get the last bbox
@@ -376,7 +383,7 @@ def crop_bboxes_aug(frames, im_save_path, data_save_path):
                             save_annotations_yolo(left, upper, overlap_bboxes, data_save_path, z, i, theta)
 
                             i += 1
-                            NUM_IMAGES += 1
+                            NUM_TRAIN += 1
 
                 #remove all of the bboxes that appeared in the random croppings
                 for bbox in all_overlaps:
@@ -409,7 +416,7 @@ def main():
 
     for file in os.listdir(data_directory):
         #currently only using 1 image from directory for running locally
-        if file.endswith('.tif') and '13223' in file:
+        if file.endswith('.tif') and '32342' in file:
             image_path = os.path.join(data_directory, file)
             data_path = image_path + '.mat'
             if os.path.exists(data_path):
@@ -434,7 +441,9 @@ def main():
 
     print()
     print("Succesfully created dataset in ~", (finish_time-start_time)//60, "minutes.")
-    print("Dataset size:", NUM_IMAGES, "images")
+    print("Dataset size:")
+    print("Training set", NUM_TRAIN , "images")
+    print("Validation set", NUM_VAL , "images")
     print("A total of", NUM_MISSED, "bounding boxes could not be cropped with a window size of", WINDOW_SIZE)
     print("A total of", Bbox.BBOXES_REMOVED, "bounding boxes were removed as unclean annotations")
 
