@@ -29,5 +29,5 @@ model = YOLO("yolov8n.yaml")
 results = model.train(data = d_path, 
                       epochs = 100,
                       imgsz = 640, 
-                      save = True
+                      save = True,
                       plots = True)
