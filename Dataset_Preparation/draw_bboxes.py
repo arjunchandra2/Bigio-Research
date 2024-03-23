@@ -11,13 +11,12 @@ CLASS_COLORS = {0: "red", 1 : "green", 2 : "blue"}
 
 
 
-
 def main():
     """ Main"""
 
     #Add OS logic here if needed to loop over directory, draw bboxes, and save images in new directory 
-    image_path = "/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Dataset/results/images/11_X13223_Y20674.(5_141).png"
-    annotation_path = "/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Dataset/results/annotations/11_X13223_Y20674.(5_141).txt"
+    image_path = "/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Dataset/results/images/11_X32342_Y17459.(8_221).png"
+    annotation_path = "/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Dataset/results/annotations/11_X32342_Y17459.(8_221).txt"
     save_path = ""
 
 

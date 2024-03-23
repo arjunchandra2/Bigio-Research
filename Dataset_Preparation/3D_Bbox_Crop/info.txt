@@ -21,7 +21,7 @@ Cropped images with annotations should be saved in a new folder in the working d
 train and val folders according to yolo format:
 
 results
-   |train
+    |train
         |images
         |labels
     |val
@@ -58,7 +58,7 @@ and does not improve training.
 
 Validation set will not include augmentation and a separate image or set of images will be reserved for validation 
 since defects in nearby planes are the same defect which will create similarities between the training and validation
-set and yield artificially high accuracy. 
+set and yield artificially high accuracy if we were to just randomly select training data.
 
 
 SCRIPT SPECIFIC NOTES

@@ -24,12 +24,9 @@ NUM_TRAIN = 0
 #Parameter to set for cropping
 WINDOW_SIZE = 300
 
-#percent of data added to validation set
-VAL_SPLIT = 0.1
-
 #Augmentation parameters
-AUGMENTATION = True
-NUM_CROPS = 10
+AUGMENTATION = False
+NUM_CROPS = 2
 
 
 def add_bboxes(annotations):
@@ -200,10 +197,16 @@ def save_annotations_yolo(left, upper, bboxes, data_save_path, z, i, theta = 0):
 
 def remove_blurry(frames):
     """
-    - Removes bounding boxes from first two and last two planes since they are too blurry for annotations
+    - Removes bounding boxes from planes 1-7 and 22-25 since they are too blurry for annotations
     and only show up in the data due to bugs in original annotation software 
     """
-    for z in [1,2,len(frames)-1, len(frames)]:
+
+    for z in range(1,8):
+        if z in Bbox.bboxes_unseen:
+            Bbox.count -= len(Bbox.bboxes_unseen[z])
+            Bbox.bboxes_unseen[z] = []
+    
+    for z in range(len(frames) - 3, len(frames)):
         if z in Bbox.bboxes_unseen:
             Bbox.count -= len(Bbox.bboxes_unseen[z])
             Bbox.bboxes_unseen[z] = []
@@ -220,11 +223,10 @@ def crop_bboxes(frames, im_save_path, data_save_path):
     global NUM_VAL
     global NUM_TRAIN
 
+    #remove blurry frames to ensure clean annotations
     remove_blurry(frames)
 
-    #range(2,len(frames)-2) to not include first two and last two planes since they are too blurry anyways
-    #alter loop bounds depending on dataset
-    for z in range(2,len(frames)-2):
+    for z in range(len(frames)):
         if z + 1 in Bbox.bboxes_unseen:
             #crop number
             i = 0
@@ -284,8 +286,11 @@ def crop_bboxes(frames, im_save_path, data_save_path):
                 save_annotations_yolo(left, upper, overlap_bboxes, data_save_path, z, i)
 
                 i += 1
-
-                NUM_TRAIN += 1
+                
+                if 'valid' in save_path:
+                    NUM_VAL += 1
+                else:
+                    NUM_TRAIN += 1
 
     
     assert Bbox.count == 0
@@ -298,14 +303,12 @@ def crop_bboxes_aug(frames, im_save_path, data_save_path):
     - bboxes are rotated by save_annotations_yolo
     """
     global NUM_MISSED
-    global NUM_VAL
     global NUM_TRAIN
 
+    #remove blurry frames to ensure clean annotations
     remove_blurry(frames)
 
-    #range(2,len(frames)-2) to not include first two and last two planes since they are too blurry anyways
-    #alter loop bounds depending on dataset
-    for z in range(2,len(frames)-2):
+    for z in range(len(frames)):
         if z + 1 in Bbox.bboxes_unseen:
             #crop number
             i = 0
@@ -400,6 +403,9 @@ def main():
 
     #READ AND PROCESS ALL .MAT FILES IN DIRECTORY AND SAVE RESULTS TO ./RESULTS
     data_directory = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Dataset'
+    
+    #images to be used for validation
+    val_images = ['11_X32342_Y17459.tif']
 
     #timing
     start_time = time.perf_counter()
@@ -409,16 +415,24 @@ def main():
     if(os.path.exists(results_dir)):
         os.system('rm -fr "%s"' % results_dir)
 
-        
+    
+    #create directory tree 
     os.mkdir(results_dir)
-    os.mkdir(os.path.join(results_dir, 'images'))
-    os.mkdir(os.path.join(results_dir, 'annotations'))
+    os.mkdir(os.path.join(results_dir, 'train'))
+    os.mkdir(os.path.join(results_dir, 'train', 'images'))
+    os.mkdir(os.path.join(results_dir, 'train', 'labels'))
+    os.mkdir(os.path.join(results_dir, 'valid'))
+    os.mkdir(os.path.join(results_dir, 'valid', 'images'))
+    os.mkdir(os.path.join(results_dir, 'valid', 'labels'))
+
 
     for file in os.listdir(data_directory):
-        #currently only using 1 image from directory for running locally
-        if file.endswith('.tif') and '32342' in file:
+        if file.endswith('.tif'):
+
             image_path = os.path.join(data_directory, file)
             data_path = image_path + '.mat'
+            
+            #if the file has been annotated then we crop
             if os.path.exists(data_path):
                 #Read in image and store z_stack in array of PIL objects
                 im_frames = process_image(image_path)
@@ -427,15 +441,22 @@ def main():
                 annotations = load_annotations(data_path)
                 add_bboxes(annotations)
 
-                image_save_path = os.path.join(results_dir, 'images', file)
-                data_save_path = os.path.join(results_dir, 'annotations', file)
+                if file in val_images:
+                    image_save_path = os.path.join(results_dir, 'valid', 'images', file)
+                    data_save_path = os.path.join(results_dir, 'valid', 'labels', file)
 
-                #crop and save bboxes using PIL img array 'frames' and Bbox class 
-                if AUGMENTATION:
-                    crop_bboxes_aug(im_frames, image_save_path, data_save_path)
-                else:
+                    #no augmentation for validation images
                     crop_bboxes(im_frames, image_save_path, data_save_path)
-               
+                else:
+                    image_save_path = os.path.join(results_dir, 'train', 'images', file)
+                    data_save_path = os.path.join(results_dir, 'train', 'labels', file)
+
+                    #crop and save bboxes using PIL img array 'frames' and Bbox class 
+                    if AUGMENTATION:
+                        crop_bboxes_aug(im_frames, image_save_path, data_save_path)
+                    else:
+                        crop_bboxes(im_frames, image_save_path, data_save_path)
+                
 
     finish_time = time.perf_counter()
 
