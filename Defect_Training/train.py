@@ -24,7 +24,7 @@ from ultralytics import YOLO
 
 d_path = "/projectnb/npbssmic/ac25/Defect_Training/data.yaml"
 
-model = YOLO("yolov8n.yaml")
+model = YOLO("yolov8n.pt")
 
 results = model.train(data = d_path, 
                       epochs = 100,
