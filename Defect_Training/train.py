@@ -30,4 +30,12 @@ results = model.train(data = d_path,
                       epochs = 100,
                       imgsz = 640, 
                       save = True,
-                      plots = True)
+                      plots = True,
+                      hsv_h = 0,
+                      hsv_s = 0,
+                      hsv_v = 0,
+                      translate = 0,
+                      scale = 0,
+                      fliplr = 0,
+                      mosaic = 0, 
+                      )
