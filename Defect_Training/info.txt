@@ -1,0 +1,18 @@
+Training settings will turn off Yolo augmentations and use only the augmented dataset.
+
+3/25 - Trained model from pretrained weights without freezing any layers for 30 epochs. The dataset used included augmentations with 
+10x random croppings and was about ~175k images. It seemed that overfitting occurred after the first epoch as training loss went
+down consistently and validation loss increased consistently across all 3 loss metrics. This is possible because the dataset is so 
+large and we used a batch size of 16 so there were ~11k iterations (i.e. weight updates) in the first epoch. Also storing augmentations
+could actually contribute to overfitting since the model sees all 80x versions of an image in every single epoch whereas with augmentation
+layers this would not occur. It's also possible that it is contributing to overfiting because we are only applying 1-3 simple augmentations
+on each image since there are very limited suitable augmentations for our image domain. 
+
+We need to check the data and do some more data cleaning and examining of the cropping script. We should remove bounding boxes that are
+below a threshold (start with 20px area). We could also try checking for boudnign boxes that just contain noise and removing but this 
+will be more involved. Another cleaning method would be to remove all bounding boxes when one of them jumps multiple planes instead of 
+just removing the jump. Being more strict with the data will produce a smaller but higher quality datset. We also need to check the script
+as it seemed in Yolo's training batch logging that some annotations were missing. A final resort would be to try and debug the annotation software.
+
+
+

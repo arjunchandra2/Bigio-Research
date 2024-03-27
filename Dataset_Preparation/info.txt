@@ -2,7 +2,7 @@ This folder contains all of the scripts used for dataset preparation and other n
 
 Directory: 
 3D_Bbox_Crop - Crop bboxes from 3d image stored as .tif file with option for augmentations 
-background.py - Add background images to dataset *Needs to be implemented as of 2/29
+background.py - Add background images to dataset *Needs to be implemented still
 Downsampling_Distribution - Get distribution of bounding box sizes in dataset 
 
 Notes:
