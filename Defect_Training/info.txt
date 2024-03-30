@@ -28,4 +28,11 @@ work needed for data cleaning that is definitely affecting learning but it will 
 add regularization (weight decay). Figured out multiple gpu training - the devices need to explicitly be set to the corresponding indices
 in the CUDA_VISIBLE_DEVICES environment variable otherwise the process is killed. 
 
+I also experimented with training at higher resolutions and freezing layers. Freezing the entire backbone is too much because
+then the model cannot adapt enough to our images which are very different from Coco and we get poor results. Freezing the 1st layer 
+and the first 3 layers seemed to work better, training stopped early due to no improvement but metrics were similar to those without
+freezing any layers. Training at a higher resolution seemed to improve results slightly and notably vesicles had an mAP of 55% but 
+the hyperparameters will not do much right now as the dataset still needs work.
+
+
 
