@@ -6,7 +6,14 @@ down consistently and validation loss increased consistently across all 3 loss m
 large and we used a batch size of 16 so there were ~11k iterations (i.e. weight updates) in the first epoch. Also storing augmentations
 could actually contribute to overfitting since the model sees all 80x versions of an image in every single epoch whereas with augmentation
 layers this would not occur. It's also possible that it is contributing to overfiting because we are only applying 1-3 simple augmentations
-on each image since there are very limited suitable augmentations for our image domain. 
+on each image since there are very limited suitable augmentations for our image domain. We should figure out a way to 
+implement custom augmentation layers instead of storing every augmented version in dataset (pytorch dataloader).
+
+Another interesting result was that the classification loss lookeed far worse than the other two loss metrics. This
+seems to suggest that the network is having a hard time distinguishing between classes and this will make mAP metric look
+very bad. This makes sense because vesicles and defect annotations look very similar and we need multiple planes to 
+distinguish between them but we are only passing in one plane as input. We could just try to group everything into 
+one class to improve results. 
 
 We need to check the data and do some more data cleaning and examining of the cropping script. We should remove bounding boxes that are
 below a threshold (start with 20px area). We could also try checking for boudnign boxes that just contain noise and removing but this 
@@ -14,5 +21,11 @@ will be more involved. Another cleaning method would be to remove all bounding b
 just removing the jump. Being more strict with the data will produce a smaller but higher quality datset. We also need to check the script
 as it seemed in Yolo's training batch logging that some annotations were missing. A final resort would be to try and debug the annotation software.
 
+
+3/30 - Trained model from pretrained weights without freezing any layers for 100 epochs on raw dataset of ~3k images (no augmentation). 
+Overfitting did not happen as quickly but still occurred relatively early although training data was learned well. There seems to be some
+work needed for data cleaning that is definitely affecting learning but it will also be worth it to decrease the learning rate and/or 
+add regularization (weight decay). Figured out multiple gpu training - the devices need to explicitly be set to the corresponding indices
+in the CUDA_VISIBLE_DEVICES environment variable otherwise the process is killed. 
 
 
