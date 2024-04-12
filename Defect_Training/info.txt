@@ -34,5 +34,7 @@ and the first 3 layers seemed to work better, training stopped early due to no i
 freezing any layers. Training at a higher resolution seemed to improve results slightly and notably vesicles had an mAP of 55% but 
 the hyperparameters will not do much right now as the dataset still needs work.
 
+4/11 - Trained model with randomly initialized weights instead of pretrained and acheived similar performance but training was stopped 
+early due to no improvement. Validation loss curves were slightly more pronounced and easy to see at what point overfitting occurs. 
 
 
