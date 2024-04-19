@@ -77,6 +77,13 @@ data_dirs = ['/projectnb/npbssmic/ac25/RGB_Data_Anna',\
 results_dir = "/projectnb/npbssmic/ac25/Dataset_Preparation/results"
 for data_directory in data_dirs:   
 
+
+BUG IN CROPPING ALGORITHM (3/19): Deleting bounding boxes when they are first seen removes them from other cropped 
+images where they should be present. This is a huge error because the model will see the same defect annotated
+in one image and not in the other. 
+
+
+
 Bbox.py:
 
 - We need to clean up the data from the annotation software when we load it in since there are 
