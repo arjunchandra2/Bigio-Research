@@ -10,9 +10,6 @@ class Bbox:
     #count of number of bboxes removed as a result of checking annotations 
     BBOXES_REMOVED = 0
 
-    #number of bboxes left - should be zero when an image has been fully processed
-    #this must be decremented by the *caller* code 
-    count = 0
     #maintain a list of all unseen bounding boxes 
     bboxes_unseen = {}
 
@@ -33,25 +30,18 @@ class Bbox:
             #do not add duplicates from annotation file
             if self not in Bbox.bboxes_unseen[z_plane]:
                 Bbox.bboxes_unseen[z_plane].append(self)
-                Bbox.count += 1
-                self.check()
+                #self.check()
+            else:
+                Bbox.BBOXES_REMOVED += 1
         else:
             Bbox.bboxes_unseen[z_plane] = [self]
-            Bbox.count += 1
-            self.check()
-
+            #self.check()
 
         Bbox.last_bbox = self
 
-
-    
-    def center_x(self):
-        return self.top_left_x + self.width//2
-    
-    def center_y(self):
-        return self.top_left_y + self.height//2
     
     
+    #this method is unused for now (3/19) until we decide about cleaning data manually 
     def check(self):
          #remove annotation if it is not clean - (exact same bbox coords jumps multiple z-planes)
         if Bbox.last_bbox is not None:
@@ -62,9 +52,16 @@ class Bbox:
                 print('BECUASE LAST WAS:')
                 print(Bbox.last_bbox)
                 Bbox.bboxes_unseen[self.z_plane].remove(self)
-                Bbox.count -= 1
                 Bbox.BBOXES_REMOVED += 1
+
+
+   
+    def center_x(self):
+        return self.top_left_x + self.width//2
     
+    def center_y(self):
+        return self.top_left_y + self.height//2
+
 
     def coords_equal(self, other):
         return self.top_left_x == other.top_left_x and self.top_left_y == other.top_left_y and self.width == other.width \

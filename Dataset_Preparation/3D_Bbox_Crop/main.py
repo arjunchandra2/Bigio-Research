@@ -34,8 +34,6 @@ def add_bboxes(annotations):
     - Create bbox objects for all of the bounding boxes in each (3D) image
     - All of the bboxes for the image will be stored within the class
     """
-    #every time we call this method there should be no boudning boxes from previous images
-    assert Bbox.count == 0
 
     for i in range(len(annotations['class_type'])):
         class_name = annotations['class_type'][i]
@@ -199,16 +197,15 @@ def remove_blurry(frames):
     """
     - Removes bounding boxes from planes 1-7 and 22-25 since they are too blurry for annotations
     and only show up in the data due to bugs in original annotation software 
+    - z plane is one-indexed
     """
 
     for z in range(1,8):
         if z in Bbox.bboxes_unseen:
-            Bbox.count -= len(Bbox.bboxes_unseen[z])
             Bbox.bboxes_unseen[z] = []
     
-    for z in range(len(frames) - 3, len(frames)):
+    for z in range(len(frames) - 3, len(frames)+1):
         if z in Bbox.bboxes_unseen:
-            Bbox.count -= len(Bbox.bboxes_unseen[z])
             Bbox.bboxes_unseen[z] = []
 
 
@@ -217,7 +214,7 @@ def crop_bboxes(frames, im_save_path, data_save_path):
     - Crop images around bounding box in each frame as we go and check for overlap
     - Z-plane is one-indexed as opposed to frames array
     - Images are saved to working directory with z_plane and crop number
-    - Remove bounding boxes from first two and last two planes to clean up buggy annotations 
+    - Remove bounding boxes from first few and last few planes to clean up buggy annotations 
     """
     global NUM_MISSED
     global NUM_VAL
@@ -230,18 +227,16 @@ def crop_bboxes(frames, im_save_path, data_save_path):
         if z + 1 in Bbox.bboxes_unseen:
             #crop number
             i = 0
-            #while there are boxes left to process in z_plane: z+1
-            while(Bbox.bboxes_unseen[z+1]):
-                #get the last bbox
-                current_bbox = Bbox.bboxes_unseen[z+1].pop()
-
-                Bbox.count -= 1
-
+            
+            #loop over all bboxes in current plane without removal 
+            for current_bbox in Bbox.bboxes_unseen[z+1]:
+                
                 #window size is too small to capture bbox - we just skip (can occur due to buggy annotations)
                 if current_bbox.width > WINDOW_SIZE or current_bbox.height > WINDOW_SIZE:
                     NUM_MISSED += 1
                     continue
                 
+
                 #set random cropping bounds - can be used for data augmentation if model architecture is not robust to translation
                 #ensuring the window does not exceed the image (this logic might need checking)
                 if current_bbox.top_left_x - WINDOW_SIZE + current_bbox.width > 0:
@@ -267,21 +262,14 @@ def crop_bboxes(frames, im_save_path, data_save_path):
                 right = left + WINDOW_SIZE
                 lower = upper + WINDOW_SIZE
 
+                #get all overlapping bboxes in current window
                 overlap_bboxes = get_overlaps(left, upper, right, lower, z+1)
-                #remove overlaps from tracked bboxes
-                for overlap in overlap_bboxes:
-                    Bbox.bboxes_unseen[z+1].remove(overlap)
-                    Bbox.count -= 1
-
-                #add curent bbox before creating annotation
-                overlap_bboxes.append(current_bbox)
 
                 cropped_im = frames[z].crop((left, upper, right, lower))
                 save_path = im_save_path[:-3] + '(' + str(z+1) + '_' + str(i) + ')' +  '.png'
                 print("Saving image......." + save_path)
                 cropped_im.save(save_path)
     
-
                 #MODIFY ANNOTATION FORMAT HERE
                 save_annotations_yolo(left, upper, overlap_bboxes, data_save_path, z, i)
 
@@ -292,8 +280,10 @@ def crop_bboxes(frames, im_save_path, data_save_path):
                 else:
                     NUM_TRAIN += 1
 
+
+    #remove all bounding boxes from Bbox class after the image has been processed
+    Bbox.bboxes_unseen = {}
     
-    assert Bbox.count == 0
     
                 
 
@@ -313,20 +303,14 @@ def crop_bboxes_aug(frames, im_save_path, data_save_path):
             #crop number
             i = 0
 
-            #while there are boxes left to process in z_plane: z+1
-            while(Bbox.bboxes_unseen[z+1]):
-                #get the last bbox
-                current_bbox = Bbox.bboxes_unseen[z+1].pop()
-
-                Bbox.count -= 1
+            #loop over all bboxes in current plane without removal 
+            for current_bbox in Bbox.bboxes_unseen[z+1]:
 
                 #window size is too small to capture bbox - we just skip (can occur due to buggy annotations)
                 if current_bbox.width > WINDOW_SIZE or current_bbox.height > WINDOW_SIZE:
                     NUM_MISSED += 1
                     continue
 
-                all_overlaps = []
-                
                 #set random cropping bounds - can be used for data augmentation if model architecture is not robust to translation
                 #ensuring the window does not exceed the image (this logic might need checking)
                 if current_bbox.top_left_x - WINDOW_SIZE + current_bbox.width > 0:
@@ -347,8 +331,8 @@ def crop_bboxes_aug(frames, im_save_path, data_save_path):
                 else:
                     topy = current_bbox.top_left_y
 
-                #AUGMENTATION
-                    
+
+                #AUGMENTATION:     
                 #multiple random croppings around bounding box
                 for n in range(NUM_CROPS):
                     #choose random window bounds
@@ -358,14 +342,6 @@ def crop_bboxes_aug(frames, im_save_path, data_save_path):
                     lower = upper + WINDOW_SIZE
 
                     overlap_bboxes = get_overlaps(left, upper, right, lower, z+1)
-                    
-                    #add overlaps to all_overlaps
-                    for overlap in overlap_bboxes:
-                        if overlap not in all_overlaps:
-                            all_overlaps.append(overlap)
-                    
-                    #add curent bbox before creating annotation
-                    overlap_bboxes.append(current_bbox)
 
                     cropped_im = frames[z].crop((left, upper, right, lower))
 
@@ -388,14 +364,10 @@ def crop_bboxes_aug(frames, im_save_path, data_save_path):
                             i += 1
                             NUM_TRAIN += 1
 
-                #remove all of the bboxes that appeared in the random croppings
-                for bbox in all_overlaps:
-                    Bbox.bboxes_unseen[z+1].remove(bbox)
-                    Bbox.count -= 1
-
+   
+    #remove all bounding boxes from Bbox class after the image has been processed
+    Bbox.bboxes_unseen = {}
                 
-    assert Bbox.count == 0
-    
 
 
 def main():

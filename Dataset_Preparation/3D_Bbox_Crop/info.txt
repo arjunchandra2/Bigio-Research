@@ -82,11 +82,19 @@ BUG IN CROPPING ALGORITHM (3/19): Deleting bounding boxes when they are first se
 images where they should be present. This is a huge error because the model will see the same defect annotated
 in one image and not in the other. 
 
+After turning off all data cleaning in the script (except for removing duplicate bboxes) and fixing bug, validation set 420 -> 570 
+and training 105 -> 125. There were still 149 duplicate bounding boxes.
 
+More stats for data cleaning and the dataset:
+- 10 full images annotated (3000x3000x25)
+- generates dataset in 1 min: ~3000 images in training set, ~400 images in validation set, 400 bboxes removed 
+- scaled training set by 80x using augmentation (10x random croppings) and generated in ~20 mins
 
 Bbox.py:
 
 - We need to clean up the data from the annotation software when we load it in since there are 
 some bugs resulting in duplicate data and annotations from blurry planes
-
+- 3/24: Pause all automated data cleaning -> we will do it manually instead 
+- 5/3: Only use Anna's data for dataset, only one image in RGB_Data_Arjun that is annotated and it has way less annotations than
+the rest and a lot of bboxes removed so it is probably not good data 
 
