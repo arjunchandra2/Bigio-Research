@@ -86,8 +86,9 @@ After turning off all data cleaning in the script (except for removing duplicate
 and training 105 -> 125. There were still 149 duplicate bounding boxes.
 
 More stats for data cleaning and the dataset:
-- 10 full images annotated (3000x3000x25)
-- generates dataset in 1 min: ~3000 images in training set, ~400 images in validation set, 400 bboxes removed 
+- 9 full images annotated (3000x3000x25)
+- generates dataset in 2 min (full data cleaning): ~3500 images in training set, ~500 images in validation set, ~700 bboxes removed 
+- generates dataset in 2 min (duplicate cleaning only): ~4000 images in training set, ~600 images in validation set, ~600 bboxes removed
 - scaled training set by 80x using augmentation (10x random croppings) and generated in ~20 mins
 
 Bbox.py:
