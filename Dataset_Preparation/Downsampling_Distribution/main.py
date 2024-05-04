@@ -37,7 +37,7 @@ def main():
         if file.endswith('.mat'):
             process_file(os.path.join(data_directory, file), bbox_areas)
 
-    print(len(bbox_areas))
+    print("Total bboxes: ", len(bbox_areas))
     figure, axis = plt.subplots(1, 2) 
 
     axis[0].hist(bbox_areas, bins=20, edgecolor = "black")
@@ -51,7 +51,7 @@ def main():
     for i, bin in enumerate(bins):
         if bin < .99:
             patches[i].set_facecolor('r')
-    axis[1].set_title("Counts of Bounding Boxes by Area After Pooling")
+    axis[1].set_title("Counts of Bounding Boxes by Area After Final Backbone Convolution")
     axis[1].set_xlabel("Bounding Box Area (px)")
     axis[1].set_ylabel("Count")
     axis[1].minorticks_on()
