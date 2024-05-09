@@ -25,7 +25,7 @@ NUM_TRAIN = 0
 WINDOW_SIZE = 300
 
 #Augmentation parameters
-AUGMENTATION = False
+AUGMENTATION = True
 NUM_CROPS = 2
 
 

@@ -78,7 +78,7 @@ results_dir = "/projectnb/npbssmic/ac25/Dataset_Preparation/results"
 for data_directory in data_dirs:   
 
 
-BUG IN CROPPING ALGORITHM (3/19): Deleting bounding boxes when they are first seen removes them from other cropped 
+BUG IN CROPPING ALGORITHM (4/19): Deleting bounding boxes when they are first seen removes them from other cropped 
 images where they should be present. This is a huge error because the model will see the same defect annotated
 in one image and not in the other. 
 
@@ -95,7 +95,7 @@ Bbox.py:
 
 - We need to clean up the data from the annotation software when we load it in since there are 
 some bugs resulting in duplicate data and annotations from blurry planes
-- 3/24: Pause all automated data cleaning -> we will do it manually instead 
+- 4/24: Pause all automated data cleaning -> we will do it manually instead 
 - 5/3: Only use Anna's data for dataset, only one image in RGB_Data_Arjun that is annotated and it has way less annotations than
 the rest and a lot of bboxes removed so it is probably not good data 
 

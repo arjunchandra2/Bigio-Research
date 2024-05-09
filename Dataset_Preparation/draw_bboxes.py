@@ -15,8 +15,8 @@ def main():
     """ Main"""
 
     #Add OS logic here if needed to loop over directory, draw bboxes, and save images in new directory 
-    image_path = "/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Dataset/results/images/11_X32342_Y17459.(8_221).png"
-    annotation_path = "/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Dataset/results/annotations/11_X32342_Y17459.(8_221).txt"
+    image_path = "/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Dataset/results/train/images/11_X10751_Y19567.(9_8).png"
+    annotation_path = "/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Dataset/results/train/labels/11_X10751_Y19567.(9_8).txt"
     save_path = ""
 
 
