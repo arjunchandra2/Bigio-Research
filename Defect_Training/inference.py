@@ -8,7 +8,12 @@ import os
 
 
 def configure():
+    """
+    Wrapper for loading environment 
+    """
     load_dotenv()
+
+
 
 def main():
     configure()
@@ -33,4 +38,6 @@ def main():
 
 
 
-main()
+if __name__ == "__main__":
+    """Run from Command Line"""
+    main()
