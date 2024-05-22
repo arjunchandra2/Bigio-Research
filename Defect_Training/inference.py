@@ -27,11 +27,13 @@ def main():
 
     print(model)
 
+    im_path = "/Users/arjunchandra/Desktop/11_X10751_Y19567.(8_112).png"
+
     # infer on a local image
-    print(model.predict("/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Dataset/results/train/images/11_X10751_Y19567.(9_0).png", confidence=40, overlap=30).json())
+    print(model.predict(im_path, confidence=40, overlap=30).json())
 
     # visualize your prediction
-    # model.predict("your_image.jpg", confidence=40, overlap=30).save("prediction.jpg")
+    model.predict(im_path, confidence=40, overlap=30).save("/Users/arjunchandra/Desktop/prediction_test.jpg")
 
     # infer on an image hosted elsewhere
     # print(model.predict("URL_OF_YOUR_IMAGE", hosted=True, confidence=40, overlap=30).json())
