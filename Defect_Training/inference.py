@@ -1,5 +1,6 @@
 """
-Running model inference through Roboflow API
+Running model inference through Roboflow API/local inference
+and stitching predictions for .tif image into .mat format 
 """
 
 from roboflow import Roboflow
@@ -39,10 +40,35 @@ def get_roboflow_pred(im_path):
     # print(model.predict("URL_OF_YOUR_IMAGE", hosted=True, confidence=40, overlap=30).json())
     
 
-def main():
+def get_local_pred(image):
+    """
+    - Local image inference from Yolo model 
+    """
+    raise NotImplementedError
 
+
+def get_inference(im_path):
+    """
+    Runs model inference on .tif image and returns formatted .mat file
+    for viewing model annotations in Matlab software
+    """
+    pass
+
+    #read in image and process plane by plane 
+
+    #for each plane, split into subimages via sliding window (overlap?)
+    # for each sliding window image, run inference and get predictions
+    # write predictions to format capable of converting to .mat
+
+
+
+
+
+def main():
+    
     configure()
 
+    #will be .tif file 
     im_path = "/Users/arjunchandra/Desktop/11_X10751_Y19567.(8_112).png"
     
     get_roboflow_pred(im_path)
