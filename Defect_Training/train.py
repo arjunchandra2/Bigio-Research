@@ -14,12 +14,12 @@ Author: Arjun Chandra
 }
 """
 
-import os 
-from os import listdir
-import torch
-import torchvision
-from IPython import display
-from IPython.display import display, Image
+#import os 
+#from os import listdir
+#import torch
+#import torchvision
+#from IPython import display
+#from IPython.display import display, Image
 from ultralytics import YOLO
 
 d_path = "/projectnb/npbssmic/ac25/Defect_Training/data.yaml"

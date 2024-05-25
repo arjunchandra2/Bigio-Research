@@ -6,6 +6,7 @@ and stitching predictions for .tif image into .mat format
 from roboflow import Roboflow
 from dotenv import load_dotenv
 import os
+from scipy.io import savemat
 
 
 def configure():
@@ -19,13 +20,11 @@ def configure():
 def get_roboflow_pred(im_path):
     """
     - Get model predictions via Roboflow API
-    - Uisng YOLO-NAS model: 0.425 mAP
+    - Using YOLO-NAS model: 0.425 mAP
     """
     rf = Roboflow(api_key=os.getenv('api_key'))
-
     #print(rf.workspace().projects())
     project = rf.workspace().project("defect-training-5-3")
-
     model = project.version(4).model
 
     print(model)
@@ -42,7 +41,7 @@ def get_roboflow_pred(im_path):
 
 def get_local_pred(image):
     """
-    - Local image inference from Yolo model 
+    - Image inference from local Yolov8 model 
     """
     raise NotImplementedError
 
@@ -56,9 +55,17 @@ def get_inference(im_path):
 
     #read in image and process plane by plane 
 
-    #for each plane, split into subimages via sliding window (overlap?)
-    # for each sliding window image, run inference and get predictions
+    #for each plane, split into subimages via sliding window with overlap (overlap and window size are parameters)
+    #handle edge case by just running prediction on rectangular image 
+    #for each sliding window image, run inference and get predictions
+    #use non max suppresion for overlaps
+    
+    
+    
     # write predictions to format capable of converting to .mat
+    # mat_annotations = {"annotations": ["Image_name", "YOLOv8", ["Defect", "Defect", "Defect"], 
+    # [[1,0,0],[1,0,0],[1,0,0]], [[12],[15],[17]], [[21,124,12,12],[21,436,4353,23],[234,234,235,64]]]}
+    # savemat(filename.mat, mat_annotations)
 
 
 
@@ -70,6 +77,7 @@ def main():
 
     #will be .tif file 
     im_path = "/Users/arjunchandra/Desktop/11_X10751_Y19567.(8_112).png"
+    im_path = "/Users/arjunchandra/Desktop/reshape.png"
     
     get_roboflow_pred(im_path)
 
