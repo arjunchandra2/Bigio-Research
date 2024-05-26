@@ -20,8 +20,11 @@ d_path = "/projectnb/npbssmic/ac25/Defect_Training/data.yaml"
 
 model = YOLO("yolov8n.pt")
 
+#hyperparameter search results are not reproducible bc mutations are applied randomly
+#but individual training runs should be reproducible since they are seeded
 model.tune(data=d_path, epochs=30, iterations=300, optimizer='AdamW', 
            plots=False, save=False, val=False)
+
 
 """
 space={
