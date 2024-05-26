@@ -7,7 +7,17 @@ from roboflow import Roboflow
 from dotenv import load_dotenv
 import os
 from scipy.io import savemat
+from ultralytics import YOLO
+import time
 
+#path to YOLO model 
+MODEL_PATH = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Bigio-Research/Defect_Training/best.pt'
+#confidence threshold for detections
+CONFIDENCE = 0.2
+#window size
+WINDOW_SIZE = 300
+#window overlap
+WINDOW_OVERLAP = 0.3
 
 def configure():
     """
@@ -39,11 +49,18 @@ def get_roboflow_pred(im_path):
     # print(model.predict("URL_OF_YOUR_IMAGE", hosted=True, confidence=40, overlap=30).json())
     
 
-def get_local_pred(image):
+def get_local_pred(model, image):
     """
     - Image inference from local Yolov8 model 
-    """
-    raise NotImplementedError
+    - Image can be any of YOLO accepted formats but will switch to only PIL: 
+    https://docs.ultralytics.com/modes/predict/#inference-sources
+    - Bottleneck for time efficiency: ~25s for 100 subimages w/o batch processing
+    - Can speed up with batch processing and/or changing device to gpu
+    """ 
+    #imgsz = (width, height), recommended to resize to (640,640)
+    #resizing maintains aspect ratio using rescale and pad and maintains multiple of 32 (network stride)
+    results = model.predict(source=image, conf=CONFIDENCE, imgsz=640, device='cpu')
+
 
 
 def get_inference(im_path):
@@ -72,16 +89,23 @@ def get_inference(im_path):
 
 
 def main():
+
+    #timing
+    start_time = time.perf_counter()
     
     configure()
+    model = YOLO(MODEL_PATH)
 
     #will be .tif file 
     im_path = "/Users/arjunchandra/Desktop/11_X10751_Y19567.(8_112).png"
-    im_path = "/Users/arjunchandra/Desktop/reshape.png"
+    #im_path = "/Users/arjunchandra/Desktop/reshape.png"
+
+
+    get_local_pred(model, im_path)
     
-    get_roboflow_pred(im_path)
 
-
+    finish_time = time.perf_counter()
+    print(f"Inference finished in {finish_time-start_time} seconds")
 
 
 if __name__ == "__main__":
