@@ -41,6 +41,7 @@ def get_roboflow_pred(im_path):
     print(model)
 
     # infer on a local image - overlap set to 70%
+    #predictions are (center_x, center_y, width, height)
     print(model.predict(im_path, confidence=40, overlap=70).json())
 
     # visualize your prediction
@@ -64,7 +65,9 @@ def get_local_pred(model, image):
     #only a single result if no batch inference
     for result in results:
         print(result.boxes)
+        #xywh is center_x,center_y,w,h
         bboxes = result.boxes.numpy().xywh
+        print(len(result.boxes.cls))
         
     
 
@@ -106,10 +109,10 @@ def main():
     #will be .tif file 
     im_path = "/Users/arjunchandra/Desktop/11_X10751_Y19567.(8_112).png"
     im_path = "/Users/arjunchandra/Desktop/reshape.png"
-    #im_path = "/Users/arjunchandra/Desktop/none.png"
+    im_path = "/Users/arjunchandra/Desktop/none.png"
 
     get_local_pred(model, im_path)
-    get_roboflow_pred(im_path)
+    #get_roboflow_pred(im_path)
     
 
     finish_time = time.perf_counter()
