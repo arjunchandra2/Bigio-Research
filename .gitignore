@@ -1,2 +1,3 @@
 Defect_Training/.env
 .DS_Store
+*.pyc
