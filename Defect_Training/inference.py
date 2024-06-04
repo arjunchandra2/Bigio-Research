@@ -57,7 +57,9 @@ def process_image(image_path):
 
 def get_mat(im_path):
     """
-    Creates well-formatted dictionary for .mat annotations
+    - Creates well-formatted dictionary for .mat annotations
+    - Performs plane by plane NMS *Not yet implemented* 
+    (https://gist.github.com/leandrobmarinho/26bd5eb9267654dbb9e37f34788486b5)
     """
     #ex:
     # mat_annotations = {"annotations": ["Image_name", "YOLOv8", ["Defect", "Defect", "Defect"], 
@@ -121,7 +123,6 @@ def inference(get_pred):
                         bboxes, cls_names, confs = get_pred(window, args[1])
                         #create annotation if any predictions are made
                         if len(bboxes) > 0:
-                            #NMS here - to be implemented
                             annotation = Annotation(bboxes, cls_names, confs, z+1, window_left, window_upper)  
                                    
                     else:
