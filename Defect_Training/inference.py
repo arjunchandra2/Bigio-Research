@@ -1,12 +1,13 @@
 """
-Running model inference through Roboflow API/local inference
-and stitching predictions for .tif image into .mat format 
+Running model inference through Roboflow API/local inference and stitching predictions for .tif image into .mat format 
 """
 
-from roboflow import Roboflow
+#Roboflow model unused as of 6/9/24
+#from roboflow import Roboflow
 from ultralytics import YOLO
 from skimage import io
 from PIL import Image
+import cv2
 from dotenv import load_dotenv
 from scipy.io import savemat
 from annotation import Annotation
@@ -17,11 +18,13 @@ import os
 
 #path to YOLO model 
 MODEL_PATH = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Bigio-Research/Defect_Training/best.pt'
-#confidence threshold for detections (0 to 1)
-CONFIDENCE = 0.2
+#confidence threshold for detections (0-1)
+CONFIDENCE_THRESHOLD = 0.2
+#non max supression threshold (0-1)
+NMS_THRESHOLD = 0.5
 #window size
 WINDOW_SIZE = 300
-#window overlap for sliding window(0 to 1)
+#window overlap for sliding window (0-1)
 WINDOW_OVERLAP = 0.3
 
 #class encodings 
@@ -58,8 +61,7 @@ def process_image(image_path):
 def get_mat(im_path):
     """
     - Creates well-formatted dictionary for .mat annotations
-    - Performs plane by plane NMS *Not yet implemented* 
-    (https://gist.github.com/leandrobmarinho/26bd5eb9267654dbb9e37f34788486b5)
+    - Performs plane by plane NMS: https://gist.github.com/leandrobmarinho/26bd5eb9267654dbb9e37f34788486b5
     """
     #ex:
     # mat_annotations = {"annotations": ["Image_name", "YOLOv8", ["Defect", "Defect", "Defect"], 
@@ -68,16 +70,32 @@ def get_mat(im_path):
     
     mat_annotations = {"annotations": [im_path, "YOLOv8", [], [], [], []]}
 
-    for annotation in Annotation.annotations:
-        for i in range(len(annotation.bboxes)):
-            #format xywh so xy is in reference to entire image instead of subimage
-            annotation.bboxes[i][0] += annotation.window_left
-            annotation.bboxes[i][1] += annotation.window_upper
+   
+    for z_plane in Annotation.annotations:
+        #aggregate all annotations in each z_plane for NMS
+        bboxes = []
+        confs = []
+        cls_names = []
 
-            mat_annotations['annotations'][2].append(annotation.cls_names[i])
-            mat_annotations['annotations'][3].append(list(map(float, COLOR_ENCODING[annotation.cls_names[i]])))
-            mat_annotations['annotations'][4].append([annotation.z_plane])
-            mat_annotations['annotations'][5].append(annotation.bboxes[i])
+        for annotation in Annotation.annotations[z_plane]:
+            for i in range(len(annotation.bboxes)):
+                #format xywh so xy is in reference to entire image instead of subimage
+                annotation.bboxes[i][0] += annotation.window_left
+                annotation.bboxes[i][1] += annotation.window_upper
+
+                bboxes.append(annotation.bboxes[i])
+                confs.append(annotation.confs[i])
+                cls_names.append(annotation.cls_names[i])
+
+        #non max supression step
+        indices = cv2.dnn.NMSBoxes(bboxes, confs, CONFIDENCE_THRESHOLD, NMS_THRESHOLD)
+
+        for index in indices: 
+            mat_annotations['annotations'][2].append(cls_names[index])
+            mat_annotations['annotations'][3].append(list(map(float, COLOR_ENCODING[cls_names[index]])))
+            mat_annotations['annotations'][4].append([z_plane])
+            mat_annotations['annotations'][5].append(bboxes[index])
+            
 
     return mat_annotations
 
@@ -124,7 +142,7 @@ def inference(get_pred):
                         #create annotation if any predictions are made
                         if len(bboxes) > 0:
                             annotation = Annotation(bboxes, cls_names, confs, z+1, window_left, window_upper)  
-                                   
+                                    
                     else:
                         raise NotImplementedError
 
@@ -149,7 +167,7 @@ def inference(get_pred):
         savemat(image_path + '.mat', mat_dict)
         
         #Clear annotations for image
-        Annotation.annotations = []
+        Annotation.annotations = {}
 
     return inference_wrapper
 
@@ -165,7 +183,7 @@ def get_local_pred(image, model):
     """ 
     #imgsz = (width, height), recommended to resize to (640,640) -> seems to work fine even for rectangular images
     #resizing maintains aspect ratio using rescale and pad and maintains multiple of 32 (network stride)
-    results = model.predict(source=image, conf=CONFIDENCE, imgsz=640, iou=0.7, device='cpu')
+    results = model.predict(source=image, conf=CONFIDENCE_THRESHOLD, imgsz=640, iou=NMS_THRESHOLD, device='cpu')
 
     bboxes = []
     cls_names = []
@@ -202,12 +220,12 @@ def get_roboflow_pred(im_path):
 
     # infer on a local image - overlap set to 70%
     # predictions are (center_x, center_y, width, height)
-    print(model.predict(im_path, confidence=CONFIDENCE, overlap=70).json())
+    print(model.predict(im_path, confidence=CONFIDENCE_THRESHOLD, overlap=100*NMS_THRESHOLD).json())
 
     # visualize your prediction
-    #model.predict(im_path, confidence=40, overlap=30).save("/Users/arjunchandra/Desktop/prediction_test.jpg")
+    #model.predict(im_path, CONFIDENCE_THRESHOLD=40, overlap=30).save("/Users/arjunchandra/Desktop/prediction_test.jpg")
     # infer on an image hosted elsewhere
-    # print(model.predict("URL_OF_YOUR_IMAGE", hosted=True, confidence=40, overlap=30).json())
+    # print(model.predict("URL_OF_YOUR_IMAGE", hosted=True, CONFIDENCE_THRESHOLD=40, overlap=30).json())
     
 
 
@@ -218,7 +236,7 @@ def main():
     start_time = time.perf_counter()
     model = configure()
 
-    #path to .tif image (.mat file will be saved in same directory)
+    #full path to .tif image (.mat file will be saved in same directory)
     im_path = "/Users/arjunchandra/Desktop/11_X10821_Y18288.tif"
     
     get_local_pred(im_path, model)

@@ -4,8 +4,8 @@ Annotation Class for a set of annotations on a single subimage in a single .tif 
 
 class Annotation:
 
-    #list of all annotations for a single .tif image
-    annotations = []
+    #all annotations for a single .tif image, keys are z_planes
+    annotations = {}
 
     def __init__(self, bboxes, cls_names, confs, z_plane, window_left, window_upper) -> None:
         self.bboxes = bboxes
@@ -15,7 +15,10 @@ class Annotation:
         self.window_left = window_left
         self.window_upper = window_upper
 
-        Annotation.annotations.append(self)
+        if self.z_plane in Annotation.annotations:
+            Annotation.annotations[z_plane].append(self)
+        else:
+            Annotation.annotations[z_plane] = [self]
     
         
     def __str__(self) -> str:
