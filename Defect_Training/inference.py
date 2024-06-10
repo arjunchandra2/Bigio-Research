@@ -3,7 +3,7 @@ Running model inference through Roboflow API/local inference and stitching predi
 """
 
 #Roboflow model unused as of 6/9/24
-#from roboflow import Roboflow
+from roboflow import Roboflow
 from ultralytics import YOLO
 from skimage import io
 from PIL import Image
