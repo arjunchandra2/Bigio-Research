@@ -17,11 +17,11 @@ import os
 
 
 #path to YOLO model 
-MODEL_PATH = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Bigio-Research/Defect_Training/best.pt'
+MODEL_PATH = '/Users/arjunchandra/Desktop/School/Research/Bigio Research/Bigio-Research/Defect_Training/best.pt'
 #confidence threshold for detections (0-1)
 CONFIDENCE_THRESHOLD = 0.2
 #non max supression threshold (0-1)
-NMS_THRESHOLD = 0.5
+NMS_THRESHOLD = 0.2
 #window size
 WINDOW_SIZE = 300
 #window overlap for sliding window (0-1)
@@ -100,19 +100,23 @@ def get_mat(im_path):
     return mat_annotations
 
 
-#Decorator for model inference functions get_local_pred and get_roboflow_pred
-#Decorated function should return well-formatted predictions
+
 def inference(get_pred):
+    """
+    - Decorator for model inference functions get_local_pred and get_roboflow_pred
+    - Decorated function should return well-formatted predictions
+    - Creates a single .mat file for the entire .tif image and saves it in the same directory as the image 
+    """
 
     def inference_wrapper(*args, **kwargs):
         """
-        - Runs model inference on .tif image and returns formatted .mat file
-        for viewing model annotations in Matlab software
+        - Runs model inference on .tif image and returns formatted .mat file containing annotations
         - args[0] should be image_path
-        - args[1] is optionally the model to use
+        - args[1] should be save directory
+        - args[2] is optionally the model to use
         """
-        image_path = args[0]
-        z_stack = process_image(image_path)
+        im_path = args[0]
+        z_stack = process_image(im_path)
 
         #this loop can be changed to skip inference on blurry frames 
         for z in range(len(z_stack)):
@@ -137,8 +141,8 @@ def inference(get_pred):
                     window = z_plane.crop((window_left, window_upper, window_right, window_lower))
            
                     #get predictions, get_pred return values should be ordered numpy arrays 
-                    if len(args) == 2:
-                        bboxes, cls_names, confs = get_pred(window, args[1])
+                    if len(args) == 3:
+                        bboxes, cls_names, confs = get_pred(window, args[2])
                         #create annotation if any predictions are made
                         if len(bboxes) > 0:
                             annotation = Annotation(bboxes, cls_names, confs, z+1, window_left, window_upper)  
@@ -146,25 +150,27 @@ def inference(get_pred):
                     else:
                         raise NotImplementedError
 
-                    #slide window, ensure right side does not exceed image width
-                    #with overlap on, window behavior at edges of image might not be desirable - could add a check
-                    #to break loop here if window_right == width
+                    #window behavior at edges of image might not be desirable 
                     if window_right == width:
                         break
+
+                    #slide window to the right
                     window_left = window_left + WINDOW_SIZE - WINDOW_SIZE*WINDOW_OVERLAP
                     window_right = min(width, window_right + WINDOW_SIZE - WINDOW_SIZE*WINDOW_OVERLAP)
 
-                #same note about overlap 
+                #window behavior at edges of image might not be desirable 
                 if window_lower == height:
                     break
+
+                #slide window down
                 window_upper = window_upper + WINDOW_SIZE - WINDOW_SIZE*WINDOW_OVERLAP
                 window_lower = min(height, window_lower + WINDOW_SIZE - WINDOW_SIZE*WINDOW_OVERLAP)
         
         #Create dictionary from Annotations  
-        mat_dict = get_mat(image_path)
+        mat_dict = get_mat(im_path)
      
         #Create .mat file and save
-        savemat(image_path + '.mat', mat_dict)
+        savemat(im_path + '.mat', mat_dict)
         
         #Clear annotations for image
         Annotation.annotations = {}
@@ -173,17 +179,16 @@ def inference(get_pred):
 
 
 @inference
-def get_local_pred(image, model):
+def get_local_pred(im_path, save_dir, model):
     """
     - Image inference from local Yolov8 model 
-    - Image can be any of YOLO accepted formats: 
-    https://docs.ultralytics.com/modes/predict/#inference-sources
+    - YOLO accepted formats: https://docs.ultralytics.com/modes/predict/#inference-sources
     - Bottleneck for time efficiency: ~25s for 100 subimages w/o batch processing
     - Can speed up with batch processing (not supported yet) and/or changing device to gpu
     """ 
     #imgsz = (width, height), recommended to resize to (640,640) -> seems to work fine even for rectangular images
     #resizing maintains aspect ratio using rescale and pad and maintains multiple of 32 (network stride)
-    results = model.predict(source=image, conf=CONFIDENCE_THRESHOLD, imgsz=640, iou=NMS_THRESHOLD, device='cpu')
+    results = model.predict(source=im_path, conf=CONFIDENCE_THRESHOLD, imgsz=640, iou=NMS_THRESHOLD, device='cpu')
 
     bboxes = []
     cls_names = []
@@ -206,7 +211,7 @@ def get_local_pred(image, model):
 
 
 #Not yet supported for full inference in case of rate limits
-def get_roboflow_pred(im_path):
+def get_roboflow_pred(im_path, save_dir):
     """
     - Get model predictions via Roboflow API
     - Using YOLO-NAS model: 0.425 mAP
@@ -236,10 +241,11 @@ def main():
     start_time = time.perf_counter()
     model = configure()
 
-    #full path to .tif image (.mat file will be saved in same directory)
-    im_path = "/Users/arjunchandra/Desktop/11_X10821_Y18288.tif"
-    
-    get_local_pred(im_path, model)
+    #full path to .tif image 
+    im_path = "/Users/arjunchandra/Desktop/School/Research/Bigio Research/Annotation Demo/11_X10821_Y18288.tif"
+    save_dir = "/Users/arjunchandra/Desktop/School/Research/Bigio Research/BW_results"
+
+    get_local_pred(im_path, save_dir, model)
     #get_roboflow_pred(im_path)
 
     finish_time = time.perf_counter()
