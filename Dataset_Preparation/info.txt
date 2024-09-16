@@ -18,7 +18,7 @@ Ultralytics Dataset Recommendations:
 1. >1,500 images per class 
 2. >10,000 instances per class labeled
 3. Partial labeling is detrimental 
-4. 0-10% background images (no objects present) to reduce FP rate - no corresponding .txt label required in labels
+4. 0-10% background images (no objects present) to reduce FP rate - need an empty .txt file still (https://github.com/ultralytics/ultralytics/issues/7981) 
 
 Ultralytics Training Recommendations:
 Epochs: Start with 300 epochs. If this overfits early then you can reduce epochs. If overfitting does not occur after
