@@ -1,0 +1,11 @@
+Model Info
+
+best_1.pt: Trained on (R,G,B) BRM images with size 300 x 300 upscaled to 640 x 640 for training and inference
+mAP@0.5 = 0.464
+F1 = 0.50 at confidence = 0.263
+ 
+best_2.pt: Trained on grayscale (G,G,G) BRM images with size 100 x 100 upscaled to 640 x 640 for training and inference. No vesciles
+mAP@0.5 = 0.54
+F1 = 0.57 at confidence = 0.255
+ 
+
