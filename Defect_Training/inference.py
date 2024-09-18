@@ -17,15 +17,17 @@ import os
 
 
 #path to YOLO model 
-MODEL_PATH = '/Users/arjunchandra/Desktop/School/Research/Bigio Research/Bigio-Research/Defect_Training/best.pt'
+MODEL_PATH = '/Users/arjunchandra/Desktop/School/Research/Bigio Research/Bigio-Research/Defect_Training/Models/best_2.pt'
 #confidence threshold for detections (0-1)
 CONFIDENCE_THRESHOLD = 0.2
 #non max supression threshold (0-1)
 NMS_THRESHOLD = 0.2
-#window size
-WINDOW_SIZE = 300
-#window overlap for sliding window (0-1)
-WINDOW_OVERLAP = 0.3
+#window size: for @inference this is sliding window size, for @inference_grayscale this is subimage size 
+WINDOW_SIZE = 600
+#subwindow size for @inference_grayscale 
+SUB_WINDOW_SIZE = 100
+#window overlap for sliding window (@inference) or sliding sub_window (@inference_grayscale). Should be (0-1)
+WINDOW_OVERLAP = 0.5
 
 #class encodings 
 CLASS_ENCODING = {0: 'Defect', 1: 'Swelling', 2: 'Vesicle'}
@@ -56,6 +58,18 @@ def process_image(image_path):
         pil_frames.append(image)
         
     return pil_frames
+
+def convert_to_grayscale(image):
+    """
+    - Converts the RGB image to grayscale by copying the G channel to R and B
+    (R,G,B) -> (G, G, G)
+    """
+    channels = np.array(image)
+    #apply transformation
+    channels[:,:,0] = channels[:,:,1]
+    channels[:,:,2] = channels[:,:,1]
+
+    return Image.fromarray(channels)
 
 
 def get_mat(im_path):
@@ -100,6 +114,134 @@ def get_mat(im_path):
     return mat_annotations
 
 
+def inference_grayscale(get_pred):
+    """
+    - Decorator for model inference functions get_local_pred and get_roboflow_pred
+    - Decorated function should return well-formatted predictions
+    - Image is converted to grayscale before inference
+    - Tiles the .tif image into subimages and saves a .mat file for each subimage in the save directory along with the subimage. 
+    """
+
+    def sub_image_inference(im_path, save_dir, model, image, i, z, window_left, window_upper):
+        """
+        - Slides sub_window across subimage and populates Annotation class with predictions
+        - Only supports YOLO model inference
+        """
+        #initalize sliding window
+        window_left = 0
+        window_right = SUB_WINDOW_SIZE
+        window_upper = 0 
+        window_lower = SUB_WINDOW_SIZE
+
+        width, height = image.size
+
+        while window_upper < height:
+
+                window_left = 0
+                window_right = SUB_WINDOW_SIZE
+                while window_left < width:
+                    #crop image at window location
+                    window = image.crop((window_left, window_upper, window_right, window_lower))
+
+                    bboxes, cls_names, confs = get_pred(window, save_dir, model)
+                  
+                    #create annotation if any predictions are made
+                    if len(bboxes) > 0:
+                        #save annotation with z_plane = 1 since it is not a z-stack
+                        annotation = Annotation(bboxes, cls_names, confs, 1, window_left, window_upper)  
+                    
+                    #window behavior at edges of image might not be desirable 
+                    if window_right == width:
+                        break
+
+                    #slide window to the right
+                    window_left = window_left + SUB_WINDOW_SIZE - SUB_WINDOW_SIZE*WINDOW_OVERLAP
+                    window_right = min(width, window_right + SUB_WINDOW_SIZE - SUB_WINDOW_SIZE*WINDOW_OVERLAP)
+
+                #window behavior at edges of image might not be desirable 
+                if window_lower == height:
+                    break
+
+                #slide window down
+                window_upper = window_upper + SUB_WINDOW_SIZE - SUB_WINDOW_SIZE*WINDOW_OVERLAP
+                window_lower = min(height, window_lower + SUB_WINDOW_SIZE - SUB_WINDOW_SIZE*WINDOW_OVERLAP)
+
+        im_path_tail = os.path.split(im_path)[1]
+        save_path = save_dir + '/' + im_path_tail[:-4] + f'_({z}_{i}).png'
+
+        #Create dictionary from Annotations  
+        mat_dict = get_mat(save_path)
+        #Create .mat file and save image 
+        image.save(save_path)   
+        savemat(save_path + '.mat', mat_dict)
+
+        #Clear annotations for image
+        Annotation.annotations = {}
+
+        print(f"Saved image: {save_path}")
+                                   
+
+    def inference_grayscale_wrapper(*args, **kwargs):
+        """
+        - Runs model inference on .tif image and returns formatted .mat file containing annotations
+        - args[0] should be image_path
+        - args[1] should be save directory
+        - args[2] is the model to use
+        """
+        im_path = args[0]
+        save_dir = args[1]
+        model = args[2]
+
+        z_stack = process_image(im_path)
+
+        #skip blurry planes, only use planes 8-21 as in training data 
+        for z in range(11,len(z_stack)-4):
+            #subimage index
+            i = 0
+            #PIL image for current plane in z_stack
+            z_plane = z_stack[z]
+
+            #convert to grayscale
+            z_plane = convert_to_grayscale(z_plane)
+            width, height = z_plane.size
+
+            #initalize sliding window
+            window_left = 0
+            window_right = WINDOW_SIZE
+            window_upper = 0 
+            window_lower = WINDOW_SIZE
+
+            #The logic is slightly different from @inference because we are not trying to make predictions for the entire image. 
+            #We are making predictions for subimages of the image and only want the square Window_SIZE x Window_SIZE subimages
+            #and there should be no overlap between subimages. 
+            while window_lower < height:
+
+                window_left = 0
+                window_right = WINDOW_SIZE
+
+                while window_right < width:
+
+                    #crop image at window location
+                    window = z_plane.crop((window_left, window_upper, window_right, window_lower))
+
+                    #only support local YOLO model inference  
+                    if len(args) == 3:
+                        sub_image_inference(im_path, save_dir, model, window, i, z+1, window_left, window_upper)
+                        i +=1       
+                    else:
+                        raise NotImplementedError
+
+                    #slide window to the right
+                    window_left = window_left + WINDOW_SIZE 
+                    window_right = window_right + WINDOW_SIZE 
+
+                #slide window down
+                window_upper = window_upper + WINDOW_SIZE 
+                window_lower = window_lower + WINDOW_SIZE 
+
+    return inference_grayscale_wrapper
+
+
 
 def inference(get_pred):
     """
@@ -111,14 +253,14 @@ def inference(get_pred):
     def inference_wrapper(*args, **kwargs):
         """
         - Runs model inference on .tif image and returns formatted .mat file containing annotations
-        - args[0] should be image_path
+        - args[0] should be image_path/image
         - args[1] should be save directory
         - args[2] is optionally the model to use
         """
         im_path = args[0]
         z_stack = process_image(im_path)
 
-        #this loop can be changed to skip inference on blurry frames 
+        #this loop can be changed to skip inference on blurry planes
         for z in range(len(z_stack)):
             #PIL image for current plane in z_stack
             z_plane = z_stack[z]
@@ -142,7 +284,7 @@ def inference(get_pred):
            
                     #get predictions, get_pred return values should be ordered numpy arrays 
                     if len(args) == 3:
-                        bboxes, cls_names, confs = get_pred(window, args[2])
+                        bboxes, cls_names, confs = get_pred(window, args[1], args[2])
                         #create annotation if any predictions are made
                         if len(bboxes) > 0:
                             annotation = Annotation(bboxes, cls_names, confs, z+1, window_left, window_upper)  
@@ -178,8 +320,8 @@ def inference(get_pred):
     return inference_wrapper
 
 
-@inference
-def get_local_pred(im_path, save_dir, model):
+@inference_grayscale
+def get_local_pred(image, save_dir, model):
     """
     - Image inference from local Yolov8 model 
     - YOLO accepted formats: https://docs.ultralytics.com/modes/predict/#inference-sources
@@ -188,7 +330,7 @@ def get_local_pred(im_path, save_dir, model):
     """ 
     #imgsz = (width, height), recommended to resize to (640,640) -> seems to work fine even for rectangular images
     #resizing maintains aspect ratio using rescale and pad and maintains multiple of 32 (network stride)
-    results = model.predict(source=im_path, conf=CONFIDENCE_THRESHOLD, imgsz=640, iou=NMS_THRESHOLD, device='cpu')
+    results = model.predict(source=image, conf=CONFIDENCE_THRESHOLD, imgsz=640, iou=NMS_THRESHOLD, device='cpu')
 
     bboxes = []
     cls_names = []
@@ -233,8 +375,6 @@ def get_roboflow_pred(im_path, save_dir):
     # print(model.predict("URL_OF_YOUR_IMAGE", hosted=True, CONFIDENCE_THRESHOLD=40, overlap=30).json())
     
 
-
-
 def main():
 
     #timing
@@ -243,10 +383,16 @@ def main():
 
     #full path to .tif image 
     im_path = "/Users/arjunchandra/Desktop/School/Research/Bigio Research/Annotation Demo/11_X10821_Y18288.tif"
-    save_dir = "/Users/arjunchandra/Desktop/School/Research/Bigio Research/BW_results"
+    save_dir = "/Users/arjunchandra/Desktop/School/Research/Bigio Research/grayscale_annotations"
 
+    if save_dir:
+        if os.path.exists(save_dir):
+            os.system('rm -fr "%s"' % save_dir)
+        
+        os.mkdir(save_dir)
+    
     get_local_pred(im_path, save_dir, model)
-    #get_roboflow_pred(im_path)
+    #get_roboflow_pred(im_path, save_dir)
 
     finish_time = time.perf_counter()
     print(f"\nInference finished in ~{(finish_time-start_time)//60} minutes")
