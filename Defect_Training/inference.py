@@ -14,12 +14,13 @@ from annotation import Annotation
 import numpy as np
 import time
 import os
+import utils
 
 
 #path to YOLO model 
 MODEL_PATH = '/Users/arjunchandra/Desktop/School/Research/Bigio Research/Bigio-Research/Defect_Training/Models/best_2.pt'
 #confidence threshold for detections (0-1)
-CONFIDENCE_THRESHOLD = 0.2
+CONFIDENCE_THRESHOLD = 0.255
 #non max supression threshold (0-1)
 NMS_THRESHOLD = 0.2
 #window size: for @inference this is sliding window size, for @inference_grayscale this is subimage size 
@@ -43,33 +44,6 @@ def configure():
     load_dotenv()
 
     return YOLO(MODEL_PATH)
-
-    
-def process_image(image_path):
-    """
-    - Returns list of Pillow images containing z-planes
-    """
-    im = io.MultiImage(image_path)
-    im_frames = im[0]
-    pil_frames = []
-    #skimage -> PIL for easier cropping and displaying 
-    for im in im_frames:
-        image = Image.fromarray(im, mode="RGB")
-        pil_frames.append(image)
-        
-    return pil_frames
-
-def convert_to_grayscale(image):
-    """
-    - Converts the RGB image to grayscale by copying the G channel to R and B
-    (R,G,B) -> (G, G, G)
-    """
-    channels = np.array(image)
-    #apply transformation
-    channels[:,:,0] = channels[:,:,1]
-    channels[:,:,2] = channels[:,:,1]
-
-    return Image.fromarray(channels)
 
 
 def get_mat(im_path):
@@ -192,17 +166,17 @@ def inference_grayscale(get_pred):
         save_dir = args[1]
         model = args[2]
 
-        z_stack = process_image(im_path)
+        z_stack = utils.process_image(im_path)
 
         #skip blurry planes, only use planes 8-21 as in training data 
-        for z in range(11,len(z_stack)-4):
+        for z in range(7,len(z_stack)-4):
             #subimage index
             i = 0
             #PIL image for current plane in z_stack
             z_plane = z_stack[z]
 
             #convert to grayscale
-            z_plane = convert_to_grayscale(z_plane)
+            z_plane = utils.convert_to_grayscale(z_plane)
             width, height = z_plane.size
 
             #initalize sliding window
@@ -258,7 +232,7 @@ def inference(get_pred):
         - args[2] is optionally the model to use
         """
         im_path = args[0]
-        z_stack = process_image(im_path)
+        z_stack = utils.process_image(im_path)
 
         #this loop can be changed to skip inference on blurry planes
         for z in range(len(z_stack)):

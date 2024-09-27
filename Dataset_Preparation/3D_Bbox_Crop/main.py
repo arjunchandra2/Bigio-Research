@@ -11,6 +11,7 @@ import numpy as np
 import random
 import os
 import time
+import utils
 
 
 #class encodings 
@@ -44,72 +45,6 @@ def add_bboxes(annotations):
 
     #for ensuring clean annotations
     Bbox.last_bbox = None
-
-def load_annotations(file_path):
-    """
-    - Read in and format annotations from .mat file into dictionary 
-    - Keep numpy datatypes
-    """
-
-    data = loadmat(file_path)
-    class_type = data['annotations'][0][2]
-    #strip whitespace
-    for i in range(len(class_type)):
-        class_type[i] = class_type[i].strip()
-    
-    z_plane = data['annotations'][0][4]
-    z_plane = z_plane.flatten()
-
-    bbox_coord = data['annotations'][0][5]
-    
-    assert len(class_type) == len(z_plane) == len(bbox_coord)
-
-    annotations_dict = {'class_type': class_type, 'z_plane': z_plane, 'bbox_coord': bbox_coord}
-    
-    return annotations_dict
-
-
-def process_image(image_path):
-    """
-    - Returns list of Pillow images for each frame
-    - *Can improve efficiency if needed by only storing frames for which annotations are present*
-    """
-    im = io.MultiImage(image_path)
-    im_frames = im[0]
-    pil_frames = []
-    #skimage -> PIL for easier cropping and displaying 
-    for im in im_frames:
-        image = Image.fromarray(im, mode="RGB")
-        pil_frames.append(image)
-        
-    return pil_frames
-
-
-def swap_channels_lib(image):
-    """
-    - Same as swap_channels but using PIL library calls 
-    - 6.5s for 10k images
-    """
-    r, g, b = image.split()
-    r = abs(np.asarray(r)-1.4*np.asarray(b))
-    r = Image.fromarray(r.clip(0, 255).astype(np.uint8))
-    
-    return Image.merge("RGB", (r,g,b))
-
-
-def swap_channels(image):
-    """
-    - Applies the following transformation to image channels and returns new image
-    (R,G,B) -> (R-1.4B, G, B)
-    - 4.5s for 10k images
-    """
-    channels = np.array(image)
-    #apply transformation
-    channels[:,:,0] = abs(channels[:,:,0] - 1.4*channels[:,:,2])
-    #keep values in valid range 
-    channels = channels.clip(0,255)
-
-    return Image.fromarray(channels)
 
 
 def get_overlaps(left, upper, right, lower, z_plane):
@@ -348,7 +283,7 @@ def crop_bboxes_aug(frames, im_save_path, data_save_path):
                     #regular and transformed/swapped channels
                     for channels in ["original", "swapped"]:
                         if channels == "swapped":
-                            cropped_im = swap_channels(cropped_im)
+                            cropped_im = utils.swap_channels(cropped_im)
                         
                         #4 orientations
                         for theta in [0, 90, 180, 270]:
@@ -407,10 +342,10 @@ def main():
             #if the file has been annotated then we crop
             if os.path.exists(data_path):
                 #Read in image and store z_stack in array of PIL objects
-                im_frames = process_image(image_path)
+                im_frames = utils.process_image(image_path)
                 
                 #reading .mat and adding bboxes to Bbox class
-                annotations = load_annotations(data_path)
+                annotations = utils.load_annotations(data_path)
                 add_bboxes(annotations)
 
                 if file in val_images:
