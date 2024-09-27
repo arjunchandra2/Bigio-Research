@@ -14,6 +14,8 @@ from annotation import Annotation
 import numpy as np
 import time
 import os
+import sys
+sys.path.insert(0, "/Users/arjunchandra/Desktop/School/Research/Bigio Research/Bigio-Research")
 import utils
 
 

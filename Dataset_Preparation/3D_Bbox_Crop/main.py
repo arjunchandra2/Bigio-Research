@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-main.py - Cropping bounding boxes and creating new directory with images and corresponding annotations in YOLO format
+main.py - Cropping around bounding boxes and creating new directory with images and corresponding annotations in YOLO format
 """
 
 from bbox import Bbox
@@ -11,6 +11,8 @@ import numpy as np
 import random
 import os
 import time
+import sys
+sys.path.insert(0, "/Users/arjunchandra/Desktop/School/Research/Bigio Research/Bigio-Research")
 import utils
 
 
