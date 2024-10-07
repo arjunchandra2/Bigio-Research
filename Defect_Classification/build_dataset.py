@@ -5,16 +5,18 @@ build_dataset.py - Crops bounding boxes from images and saves them in a new dire
 
 import os
 import sys
-sys.path.insert(0, '/Users/arjunchandra/Desktop/School/Research/Bigio Research/Bigio-Research')
+sys.path.insert(0, "..")
 
 import utils
 
 #maximum defect size 
-MAX_SIZE = 40
+MAX_SIZE = 48
 
 
 def main():
     dataset_dir = "/projectnb/npbssmic/ac25/RGB_Data_Anna"
+    #images to be used for validation
+    val_images = ['11_X32342_Y17459.tif']
     save_dir = "/projectnb/npbssmic/ac25/Defect_Classification/unsupervised_dataset"
 
     if(os.path.exists(save_dir)):
@@ -22,6 +24,8 @@ def main():
 
     #create directory tree 
     os.mkdir(save_dir)
+    os.mkdir(os.path.join(save_dir, 'train'))
+    os.mkdir(os.path.join(save_dir, 'val'))
 
     num_skipped = 0
     num_saved = 0
@@ -40,8 +44,12 @@ def main():
                 
                 #reading .mat: class_type, z_plane, bbox_coord
                 annotations = utils.load_annotations(data_path)
-
                 z_planes = annotations['z_plane']
+
+                if file in val_images:
+                    save_path_parent = save_dir + "/val"
+                else:
+                    save_path_parent = save_dir + "/train"
 
                 for i in range(len(z_planes)):
                     z_plane = z_planes[i]
@@ -75,7 +83,7 @@ def main():
                             if left > 0 and upper > 0 and right < im_frames[z_plane-1].size[0] and lower < im_frames[z_plane-1].size[1]:
                                 defect = im_frames[z_plane-1].crop((left, upper, right, lower))
 
-                                save_path = os.path.join(save_dir, file[:-4] + '_z' + str(z_plane) + '_defect' + str(j) + '.png')
+                                save_path = os.path.join(save_path_parent, file[:-4] + '_z' + str(z_plane) + '_defect' + str(j) + '.png')
                                 print("Saving ", save_path)
 
                                 defect.save(save_path)
