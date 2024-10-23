@@ -1,36 +1,44 @@
 #!/usr/bin/env python3
 """
-main.py - Cropping around bounding boxes and creating new directory with images and corresponding annotations in YOLO format
+main.py - Cropping bounding boxes and creating new directory with images and corresponding annotations in YOLO format
 """
 
 from bbox import Bbox
 from scipy.io import loadmat
+
+import torch
+from torchvision import transforms
 from PIL import Image
 from skimage import io
+
 import numpy as np
 import random
 import os
 import time
 import sys
-sys.path.insert(0, "/Users/arjunchandra/Desktop/School/Research/Bigio Research/Bigio-Research")
+
+sys.path.insert(0, "/projectnb/npbssmic/ac25")
 import utils
+from Annotation_Filtering.cnn import FilteringCNN
 
+#class encodings -> map all to zero for single class
+CLASS_NUM = {'Defect': 0, 'Swelling': 0, 'Vesicle': 1}
 
-#class encodings 
-CLASS_NUM = {'Defect': 0, 'Swelling': 1, 'Vesicle': 2}
-
-#Keep track of number of images created and number of bboxes missed for run info
-NUM_MISSED = 0
+#Keep track of number of images created in train and val, num bboxes missed, and num bboxes cleaned by CNN
 NUM_VAL = 0
 NUM_TRAIN = 0
+NUM_MISSED = 0
+NUM_CLEANED = 0
 
 #Parameter to set for cropping
-WINDOW_SIZE = 300
+WINDOW_SIZE = 100
 
 #Augmentation parameters
-AUGMENTATION = True
+AUGMENTATION = False
 NUM_CROPS = 2
 
+#model path
+CNN_MODEL_PATH = '/projectnb/npbssmic/ac25/Annotation_Filtering/model2.pt'
 
 def add_bboxes(annotations):
     """
@@ -94,6 +102,7 @@ def save_annotations_yolo(left, upper, bboxes, data_save_path, z, i, theta = 0):
 
     for bbox in bboxes:
         c_id = CLASS_NUM[bbox.class_name]
+        
         cx = bbox.center_x()
         cy = bbox.center_y()
         width = bbox.width
@@ -146,6 +155,79 @@ def remove_blurry(frames):
             Bbox.bboxes_unseen[z] = []
 
 
+def clean_annotations(frames, input_size=48, input_channels=3, threshold=0.5, save_dir="/projectnb/npbssmic/ac25/Dataset_Preparation/results_removed/"):
+    """
+    - Cleans annotations by removing bounding boxes classified as unclean by pretrained CNN
+    - input_size and input_channels are expected input dimensions for CNN
+    - CNN output is considered 1 (unclean annotation) if greater than threshold
+    """
+    global NUM_CLEANED
+
+    if not os.path.exists(save_dir):
+        os.mkdir(save_dir)
+
+    #load model and transforms 
+    cnn = FilteringCNN(input_size=input_size, input_channels=input_channels)
+    cnn.load_state_dict(torch.load(CNN_MODEL_PATH, map_location='cpu'))
+    cnn.eval()
+
+    transform = transforms.Compose([
+        transforms.ToTensor(),  # PIL -> Tensor and [0,255] -> [0,1]
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # *We are not normalizing to our dataset's actual mean and stdev here*
+        ])
+
+    #run all annotations through CNN
+    for z in range(len(frames)):
+        if z + 1 in Bbox.bboxes_unseen:
+            filtered_bboxes = []
+
+            for current_bbox in Bbox.bboxes_unseen[z+1]:
+                #get cropping window
+                left = current_bbox.top_left_x
+                upper = current_bbox.top_left_y
+                right = left + current_bbox.width
+                lower = upper + current_bbox.height
+
+                #If bbox < input size we add border 
+                if current_bbox.width <= input_size and current_bbox.height <= input_size:
+                    width_adjust = input_size - current_bbox.width
+                    height_adjust = input_size - current_bbox.height
+
+                    left_adjust = width_adjust//2
+                    right_adjust = width_adjust - left_adjust
+                    upper_adjust = height_adjust//2
+                    lower_adjust = height_adjust - upper_adjust
+
+                    left -= left_adjust
+                    right += right_adjust
+                    upper -= upper_adjust
+                    lower += lower_adjust
+
+                    #defect should still be in bounds after adding border 
+                    if left > 0 and upper > 0 and right < frames[z].size[0] and lower < frames[z].size[1]:
+                        defect = frames[z].crop((left, upper, right, lower))
+                        defect = defect.resize((input_size, input_size))
+                
+                #bbox is greater than input size, we just crop and resize 
+                else:
+                    defect = frames[z].crop((left, upper, right, lower))
+                    defect = defect.resize((input_size, input_size))
+                
+                #apply transforms and add batch dim
+                defect_input = transform(defect)
+                defect_input = torch.unsqueeze(defect_input, 0)
+
+                #get CNN prediction: only keep annotation if less than threshold
+                if cnn(defect_input).item() < threshold:
+                    filtered_bboxes.append(current_bbox)
+                else:
+                    NUM_CLEANED += 1
+                    defect.save(save_dir + "removed_" + str(NUM_CLEANED) + ".png")
+            
+            #overwrite current z-plane bboxes to only include filtered bboxes
+            Bbox.bboxes_unseen[z+1] = filtered_bboxes
+
+
 def crop_bboxes(frames, im_save_path, data_save_path):
     """
     - Crop images around bounding box in each frame as we go and check for overlap
@@ -159,6 +241,8 @@ def crop_bboxes(frames, im_save_path, data_save_path):
 
     #remove blurry frames to ensure clean annotations
     remove_blurry(frames)
+    #remove annotation bugs with CNN classifier 
+    clean_annotations(frames)
 
     for z in range(len(frames)):
         if z + 1 in Bbox.bboxes_unseen:
@@ -172,7 +256,6 @@ def crop_bboxes(frames, im_save_path, data_save_path):
                 if current_bbox.width > WINDOW_SIZE or current_bbox.height > WINDOW_SIZE:
                     NUM_MISSED += 1
                     continue
-                
 
                 #set random cropping bounds - can be used for data augmentation if model architecture is not robust to translation
                 #ensuring the window does not exceed the image (this logic might need checking)
@@ -203,6 +286,8 @@ def crop_bboxes(frames, im_save_path, data_save_path):
                 overlap_bboxes = get_overlaps(left, upper, right, lower, z+1)
 
                 cropped_im = frames[z].crop((left, upper, right, lower))
+                #cropped_im = utils.convert_to_grayscale(cropped_im)
+                
                 save_path = im_save_path[:-3] + '(' + str(z+1) + '_' + str(i) + ')' +  '.png'
                 print("Saving image......." + save_path)
                 cropped_im.save(save_path)
@@ -223,7 +308,6 @@ def crop_bboxes(frames, im_save_path, data_save_path):
     
     
                 
-
 def crop_bboxes_aug(frames, im_save_path, data_save_path):
     """
     - Same as crop_bboxes but with augmentation applied (see info.txt)
@@ -234,6 +318,8 @@ def crop_bboxes_aug(frames, im_save_path, data_save_path):
 
     #remove blurry frames to ensure clean annotations
     remove_blurry(frames)
+    #remove annotation bugs with CNN classifier 
+    clean_annotations(frames)
 
     for z in range(len(frames)):
         if z + 1 in Bbox.bboxes_unseen:
@@ -281,6 +367,8 @@ def crop_bboxes_aug(frames, im_save_path, data_save_path):
                     overlap_bboxes = get_overlaps(left, upper, right, lower, z+1)
 
                     cropped_im = frames[z].crop((left, upper, right, lower))
+                    #cropped_im = utils.convert_to_grayscale(cropped_im)
+                    
 
                     #regular and transformed/swapped channels
                     for channels in ["original", "swapped"]:
@@ -311,7 +399,7 @@ def main():
     """ Main"""
 
     #READ AND PROCESS ALL .MAT FILES IN DIRECTORY AND SAVE RESULTS TO ./RESULTS
-    data_directory = '/Users/arjunchandra/Desktop/School/Junior/Bigio Research/Dataset'
+    data_directory = '/projectnb/npbssmic/ac25/RGB_Data_Anna'
     
     #images to be used for validation
     val_images = ['11_X32342_Y17459.tif']
@@ -319,7 +407,7 @@ def main():
     #timing
     start_time = time.perf_counter()
 
-    results_dir = os.path.join(data_directory, 'results')
+    results_dir = "/projectnb/npbssmic/ac25/Dataset_Preparation/results"
     
     if(os.path.exists(results_dir)):
         os.system('rm -fr "%s"' % results_dir)
@@ -375,13 +463,15 @@ def main():
     print("Training set", NUM_TRAIN , "images")
     print("Validation set", NUM_VAL , "images")
     print("A total of", NUM_MISSED, "bounding boxes could not be cropped with a window size of", WINDOW_SIZE)
-    print("A total of", Bbox.BBOXES_REMOVED, "bounding boxes were removed as unclean annotations")
+    print("A total of", Bbox.BBOXES_REMOVED, "bounding boxes were removed as duplicates/jumping multiple planes")
+    print("A total of", NUM_CLEANED, "bounding boxes were removed as unclean annotations by the CNN")
 
-  
+
 
 if __name__ == "__main__":
     """Run from Command Line"""
     main()
+
 
 
 
