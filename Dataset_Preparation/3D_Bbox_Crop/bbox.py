@@ -17,13 +17,14 @@ class Bbox:
     last_bbox = None
 
     
-    def __init__(self, top_left_x, top_left_y, width, height, z_plane, class_name) -> None:
+    def __init__(self, top_left_x, top_left_y, width, height, z_plane, class_name, conf=1.0) -> None:
         self.top_left_x = top_left_x
         self.top_left_y = top_left_y
         self.width = width
         self.height = height
         self.z_plane = z_plane
         self.class_name = class_name
+        self.conf = conf
 
         #update Class variables 
         if z_plane in Bbox.bboxes_unseen:
@@ -32,11 +33,12 @@ class Bbox:
                 Bbox.bboxes_unseen[z_plane].append(self)
                 #self.check()
             else:
-                Bbox.BBOXES_REMOVED += 1
+                #removed a duplicate
+                Bbox.BBOXES_REMOVED += 1 
         else:
             Bbox.bboxes_unseen[z_plane] = [self]
             #self.check()
-
+            
         Bbox.last_bbox = self
 
     
@@ -62,6 +64,8 @@ class Bbox:
     def center_y(self):
         return self.top_left_y + self.height//2
 
+    def get_coords(self):
+        return self.top_left_x, self.top_left_y, self.width, self.height
 
     def coords_equal(self, other):
         return self.top_left_x == other.top_left_x and self.top_left_y == other.top_left_y and self.width == other.width \
@@ -80,3 +84,8 @@ class Bbox:
         return "Class: " + self.class_name + "\n" + "z_plane: " + str(self.z_plane) + "\n" + \
          "Bbox: [" + str(self.top_left_x)  + ", " + str(self.top_left_y) + ", " + str(self.width) + \
         ', ' + str(self.height) + "] \n"
+        
+        
+        
+        
+        
