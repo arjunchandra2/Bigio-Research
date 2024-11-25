@@ -4,13 +4,38 @@ build_dataset.py - Crops bounding boxes from images and saves them in a new dire
 """
 
 import os
+import hashlib
 import sys
-sys.path.insert(0, "..")
-
+sys.path.insert(0, '/projectnb/npbssmic/ac25')
 import utils
 
 #maximum defect size 
 MAX_SIZE = 48
+
+def remove_duplicates(image_dir):
+    """Remove duplicate .png images from the specified directory."""
+    seen_hashes = set()  # To store the hashes of images
+    removed_files = 0  # To count the removed files
+    
+    # Iterate through all files in the directory
+    for filename in os.listdir(image_dir):
+        if filename.endswith(".png"):
+            image_path = os.path.join(image_dir, filename)
+            
+            # Calculate the hash of the current image
+            with open(image_path, 'rb') as f:
+                image_hash = hashlib.md5(f.read()).hexdigest()  # MD5 hash (can be changed to SHA256)
+            
+            # If the image hash has already been seen, it's a duplicate
+            if image_hash in seen_hashes:
+                os.remove(image_path)  # Remove the duplicate image
+                removed_files += 1
+            else:
+                seen_hashes.add(image_hash)  # Mark this image as seen
+
+    # Print the number of removed duplicate files
+    print(f"Removed {removed_files} duplicate images.")
+
 
 
 def main():
@@ -97,6 +122,8 @@ def main():
                             num_skipped += 1
 
 
+    remove_duplicates(save_dir + "/train")
+    remove_duplicates(save_dir + "/val")
     print("Number of defects saved: ", num_saved)
     print("Number of defects skipped: ", num_skipped)
 
